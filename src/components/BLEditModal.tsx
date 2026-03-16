@@ -1,0 +1,614 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { X, Save, Calendar, Tag, FileText, Hash, MessageSquare, Plus, Trash2, CheckCircle2, RotateCcw } from "lucide-react";
+import { format } from "date-fns";
+
+interface AutreCharge {
+  id?: string;
+  type: string;
+  montant: string;
+  observation: string;
+}
+
+interface TypeCharge {
+  id: string;
+  nom: string;
+}
+
+interface RaisonRetourOption {
+  id: string;
+  nom: string;
+}
+
+interface BLEditModalProps {
+  bl: any;
+  voyage: any;
+  onClose: () => void;
+  onSave: () => void;
+}
+
+const STATUT_FRET_OPTIONS = ["", "Fret_ABJ", "Fret_OK", "Unrated", "A_Revoir"];
+const STATUT_CORRECTION_OPTIONS = ["", "OK_Print", "Attente_Correction", "Attente_OK"];
+
+export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModalProps) {
+  const isNew = !bl?.id;
+  
+  const [formData, setFormData] = useState({
+    booking: bl?.booking || "",
+    statut: bl?.statut || "",
+    dateRetrait: bl?.dateRetrait ? format(new Date(bl.dateRetrait), "yyyy-MM-dd") : "",
+    pod: bl?.pod || "",
+    shipper: bl?.shipper || "",
+    typeConnaissement: bl?.typeConnaissement || "",
+    tender: bl?.tender || "",
+    freighting: bl?.freighting || "",
+    valeurFret: bl?.valeurFret || "",
+    statutFret: bl?.statutFret || "",
+    numTimbre: bl?.numTimbre || "",
+    statutCorrection: bl?.statutCorrection || "",
+    commentaire: bl?.commentaire || "",
+    montantFret: bl?.montantFret?.toString() || "",
+    deviseFret: bl?.deviseFret || "EUR",
+    raisonRetour: bl?.raisonRetour || "",
+    dateRetour: bl?.dateRetour ? format(new Date(bl.dateRetour), "yyyy-MM-dd") : "",
+    numFactureRetour: bl?.numFactureRetour || "",
+  });
+
+  const [autresCharges, setAutresCharges] = useState<AutreCharge[]>(
+    bl?.autresCharges || []
+  );
+
+  const [typeCharges, setTypeCharges] = useState<TypeCharge[]>([]);
+  const [newTypeCharge, setNewTypeCharge] = useState("");
+  const [showAddType, setShowAddType] = useState(false);
+  const [showReturnForm, setShowReturnForm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const [raisonRetourOptions, setRaisonRetourOptions] = useState<RaisonRetourOption[]>([]);
+  const [newRaisonRetour, setNewRaisonRetour] = useState("");
+  const [showAddRaison, setShowAddRaison] = useState(false);
+  const [editingRaisonId, setEditingRaisonId] = useState<string | null>(null);
+  const [editingRaisonNom, setEditingRaisonNom] = useState("");
+
+  useEffect(() => {
+    fetchTypeCharges();
+    fetchRaisonRetourOptions();
+  }, []);
+
+  const fetchTypeCharges = async () => {
+    try {
+      const res = await fetch("/api/type-charges");
+      if (res.ok) {
+        const data = await res.json();
+        setTypeCharges(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchRaisonRetourOptions = async () => {
+    try {
+      const res = await fetch("/api/raison-retour");
+      if (res.ok) {
+        const data = await res.json();
+        setRaisonRetourOptions(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAddTypeCharge = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!newTypeCharge.trim()) return;
+    try {
+      const res = await fetch("/api/type-charges", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nom: newTypeCharge.trim() }),
+      });
+      if (res.ok) {
+        setNewTypeCharge("");
+        setShowAddType(false);
+        fetchTypeCharges();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAddRaisonRetour = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!newRaisonRetour.trim()) return;
+    try {
+      const res = await fetch("/api/raison-retour", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nom: newRaisonRetour.trim() }),
+      });
+      if (res.ok) {
+        setNewRaisonRetour("");
+        setShowAddRaison(false);
+        fetchRaisonRetourOptions();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleEditRaisonRetour = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!editingRaisonId || !editingRaisonNom.trim()) return;
+    try {
+      const res = await fetch(`/api/raison-retour/${editingRaisonId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nom: editingRaisonNom.trim() }),
+      });
+      if (res.ok) {
+        if (formData.raisonRetour === editingRaisonNom) {
+          setFormData({ ...formData, raisonRetour: editingRaisonNom.trim() });
+        }
+        setEditingRaisonId(null);
+        setEditingRaisonNom("");
+        fetchRaisonRetourOptions();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteRaisonRetour = async (id: string, nom: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm("Supprimer cette raison de la liste ?")) return;
+    try {
+      const res = await fetch(`/api/raison-retour/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        if (formData.raisonRetour === nom) {
+          setFormData({ ...formData, raisonRetour: "" });
+        }
+        fetchRaisonRetourOptions();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteType = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm("Supprimer ce type de charge de la liste ?")) return;
+    try {
+      const res = await fetch(`/api/type-charges/${id}`, { method: "DELETE" });
+      if (res.ok) fetchTypeCharges();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const isDateRetraitSaisie = !!formData.dateRetrait;
+
+  const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setFormData({ ...formData, [field]: e.target.value });
+
+  const addCharge = () => {
+    setAutresCharges([...autresCharges, { type: "", montant: "0", observation: "" }]);
+  };
+
+  const removeCharge = (index: number) => {
+    setAutresCharges(autresCharges.filter((_, i) => i !== index));
+  };
+
+  const updateCharge = (index: number, field: keyof AutreCharge, value: string) => {
+    const updated = [...autresCharges];
+    updated[index] = { ...updated[index], [field]: value };
+    setAutresCharges(updated);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      const url = isNew ? "/api/bls" : `/api/bls/${bl.id}`;
+      const method = isNew ? "POST" : "PATCH";
+      
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          voyageId: voyage.id,
+          autresCharges: autresCharges.filter(c => c.type && c.montant)
+        }),
+      });
+      if (res.ok) {
+        onSave();
+        onClose();
+      } else {
+        const errorData = await res.json();
+        const msg = errorData.error || "Impossible d'enregistrer le BL";
+        const details = errorData.details ? JSON.stringify(errorData.details) : "";
+        alert(`Erreur d'enregistrement :\n\n${msg}\n\n${details}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Une erreur réseau est survenue lors de l'enregistrement.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const inputCls = (val: any) => `w-full px-4 py-2.5 rounded-xl border border-gray-500 ${val ? "bg-green-50" : "bg-white"} focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm font-medium`;
+  const labelCls = "text-[10px] font-bold text-gray-600 uppercase tracking-wider flex items-center gap-1.5";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[95vh] flex flex-col">
+        
+        {/* Header */}
+        <div className="bg-primary p-6 text-white flex justify-between items-center flex-shrink-0">
+          <div>
+            <h2 className="text-xl font-bold">{isNew ? "Ajouter un BL" : `Modifier BL ${bl.booking}`}</h2>
+            <p className="text-blue-100 text-sm">{voyage.navire?.nom || "N/A"} — {voyage.numero}</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-8 space-y-6">
+          
+          <div className="grid grid-cols-2 gap-5">
+            <div className="col-span-2">
+              <div className="text-[10px] font-bold text-blue-900 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <span className="flex-1 h-px bg-blue-200"></span> Informations BL <span className="flex-1 h-px bg-blue-200"></span>
+              </div>
+            </div>
+
+            <div className={`space-y-1.5 ${isNew ? "col-span-2" : "hidden"}`}>
+              <label className={labelCls}><Hash className="w-3 h-3" /> N° Booking</label>
+              <input 
+                className={`${inputCls(formData.booking)} font-mono font-bold text-lg`} 
+                required={isNew} 
+                value={formData.booking} 
+                onChange={set("booking")} 
+                placeholder="Ex: 4055010790"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className={labelCls}><Tag className="w-3 h-3" /> Statut</label>
+              <input className={inputCls(formData.statut)} required={isDateRetraitSaisie} value={formData.statut} onChange={set("statut")} />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className={labelCls}><Calendar className="w-3 h-3" /> Date de Retrait</label>
+              <input type="date" className={inputCls(formData.dateRetrait)} value={formData.dateRetrait} onChange={set("dateRetrait")} />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className={labelCls}>POD</label>
+              <input className={inputCls(formData.pod)} required={isDateRetraitSaisie} value={formData.pod} onChange={set("pod")} />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className={labelCls}>Type Connaissement</label>
+              <select className={inputCls(formData.typeConnaissement)} required={isDateRetraitSaisie} value={formData.typeConnaissement} onChange={set("typeConnaissement")}>
+                <option value="">—</option>
+                <option value="OBL">OBL</option>
+                <option value="SWB">SWB</option>
+              </select>
+            </div>
+
+            <div className="col-span-2 space-y-1.5">
+              <label className={labelCls}>Shipper</label>
+              <input className={inputCls(formData.shipper)} required={isDateRetraitSaisie} value={formData.shipper} onChange={set("shipper")} />
+            </div>
+
+            <div className="col-span-2 pt-2">
+              <div className="text-[10px] font-bold text-blue-900 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <span className="flex-1 h-px bg-blue-200"></span> Fret &amp; Statuts <span className="flex-1 h-px bg-blue-200"></span>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className={labelCls}><FileText className="w-3 h-3" /> Statut Fret</label>
+              <select className={inputCls(formData.statutFret)} required={isDateRetraitSaisie} value={formData.statutFret} onChange={set("statutFret")}>
+                {STATUT_FRET_OPTIONS.map(o => <option key={o} value={o}>{o || "—"}</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className={labelCls}><Hash className="w-3 h-3" /> N° Timbre</label>
+              <input className={inputCls(formData.numTimbre)} required={isDateRetraitSaisie} placeholder="Ex: T-123456" value={formData.numTimbre} onChange={set("numTimbre")} />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className={labelCls}><Tag className="w-3 h-3" /> Statut Correction</label>
+              <select className={inputCls(formData.statutCorrection)} required={isDateRetraitSaisie} value={formData.statutCorrection} onChange={set("statutCorrection")}>
+                {STATUT_CORRECTION_OPTIONS.map(o => <option key={o} value={o}>{o || "—"}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Table: Autres Charges */}
+          <div className="col-span-2 pt-2">
+            <div className="text-[10px] font-bold text-blue-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <span className="flex-1 h-px bg-blue-200"></span> Autres Charges <span className="flex-1 h-px bg-blue-200"></span>
+            </div>
+            
+            <div className="max-h-60 overflow-y-auto rounded-2xl border border-gray-500 shadow-inner bg-white mb-2">
+              <table className="w-full text-left border-collapse">
+                <thead className="sticky top-0 bg-gray-100 shadow-sm z-10">
+                  <tr className="text-[10px] font-bold text-gray-600 uppercase tracking-wider border-b border-gray-500">
+                    <th className="px-3 py-2">Autre Charge</th>
+                    <th className="px-3 py-2 w-24">Montant</th>
+                    <th className="px-3 py-2">Observation</th>
+                    <th className="px-3 py-2 w-10"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-500">
+                  {autresCharges.map((c, i) => (
+                    <tr key={i} className="group hover:bg-gray-50/50 transition-colors">
+                      <td className="p-2">
+                        <select 
+                          className="w-full bg-transparent border-none focus:ring-0 p-1 font-bold text-gray-700"
+                          value={c.type}
+                          onChange={(e) => updateCharge(i, "type", e.target.value)}
+                        >
+                          <option value="">Sélectionner...</option>
+                          {typeCharges.map(tc => (
+                            <option key={tc.id} value={tc.nom}>{tc.nom}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="p-2">
+                        <input 
+                          type="text"
+                          className="w-full bg-transparent border-none focus:ring-0 p-1 font-mono font-bold text-blue-600"
+                          value={c.montant}
+                          onChange={(e) => updateCharge(i, "montant", e.target.value)}
+                        />
+                      </td>
+                      <td className="p-2">
+                        <input 
+                          className="w-full bg-transparent border-none focus:ring-0 p-1 italic text-gray-500"
+                          placeholder="..."
+                          value={c.observation}
+                          onChange={(e) => updateCharge(i, "observation", e.target.value)}
+                        />
+                      </td>
+                      <td className="p-2 text-right">
+                        <button 
+                          type="button" 
+                          onClick={(e) => { e.preventDefault(); removeCharge(i); }}
+                          className="p-1 px-2 text-red-300 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {autresCharges.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="py-8 text-center text-gray-300 italic">Aucune charge ajoutée</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex gap-2">
+              <button 
+                type="button" 
+                onClick={(e) => { e.preventDefault(); addCharge(); }}
+                className="flex-1 py-2 border-2 border-dashed border-gray-400 rounded-xl text-gray-500 hover:text-primary hover:border-primary/30 transition-all flex items-center justify-center gap-2 text-xs font-bold"
+              >
+                <Plus className="w-4 h-4" /> Ajouter une charge
+              </button>
+              <button 
+                type="button" 
+                onClick={(e) => { e.preventDefault(); setShowAddType(!showAddType); }}
+                className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors text-xs font-bold flex items-center gap-2 border border-blue-100"
+              >
+                Gérer la liste
+              </button>
+            </div>
+
+            {showAddType && (
+              <div className="mt-4 p-4 rounded-xl border border-blue-500 bg-blue-50/30 animate-in slide-in-from-top-2 duration-200">
+                <div className="flex gap-2 mb-4">
+                  <input 
+                    className={`${inputCls("")} border-blue-500 flex-1`}
+                    placeholder="Nouveau type de charge..."
+                    value={newTypeCharge}
+                    onChange={(e) => setNewTypeCharge(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTypeCharge(e as any))}
+                  />
+                  <button 
+                    type="button"
+                    onClick={(e) => handleAddTypeCharge(e)}
+                    className="p-2.5 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors"
+                  >
+                    <CheckCircle2 className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {typeCharges.map(tc => (
+                    <div key={tc.id} className="flex items-center gap-1 bg-white border border-gray-200 px-2 py-1 rounded-lg text-[10px] font-bold text-gray-600">
+                      {tc.nom}
+                      <button onClick={(e) => handleDeleteType(tc.id, e)} className="text-red-300 hover:text-red-500">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Section: Retour de BL */}
+          <div className="col-span-2 pt-2">
+            <div className="text-[10px] font-bold text-orange-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <span className="flex-1 h-px bg-orange-200"></span> Gestion du Retour <span className="flex-1 h-px bg-orange-200"></span>
+            </div>
+            
+            {!showReturnForm ? (
+              <button 
+                type="button" 
+                onClick={() => setShowReturnForm(true)}
+                className={`w-full py-3 rounded-xl border-2 border-dashed transition-all flex items-center justify-center gap-2 font-bold text-sm ${
+                  formData.raisonRetour ? "border-orange-500 bg-orange-50 text-orange-700" : "border-gray-300 text-gray-500 hover:border-orange-300 hover:text-orange-600"
+                }`}
+              >
+                <RotateCcw className="w-4 h-4" /> 
+                {formData.raisonRetour ? "Modifier les informations de retour" : "Signaler le retour du BL"}
+              </button>
+            ) : (
+              <div className="p-5 bg-orange-50/50 border border-orange-200 rounded-3xl space-y-4 animate-in zoom-in-95 duration-200">
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="text-xs font-black text-orange-700 uppercase tracking-widest flex items-center gap-2">
+                    <RotateCcw className="w-4 h-4" /> Détails du retour
+                  </h4>
+                  <button onClick={() => setShowReturnForm(false)} className="text-[10px] font-bold text-orange-600 hover:underline">Fermer</button>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className={labelCls}>Raison du retour</label>
+                      <button
+                        type="button"
+                        onClick={() => { setShowAddRaison(!showAddRaison); setEditingRaisonId(null); }}
+                        className="text-[10px] font-bold text-orange-600 hover:text-orange-800 flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" /> Ajouter une raison
+                      </button>
+                    </div>
+                    {showAddRaison && (
+                      <div className="flex gap-2 mb-1">
+                        <input
+                          className="flex-1 px-3 py-1.5 rounded-lg border border-orange-300 text-xs focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                          placeholder="Nouvelle raison..."
+                          value={newRaisonRetour}
+                          onChange={e => setNewRaisonRetour(e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddRaisonRetour(e as any); } }}
+                        />
+                        <button type="button" onClick={handleAddRaisonRetour} className="px-3 py-1.5 bg-orange-500 text-white text-xs rounded-lg hover:bg-orange-600 font-bold">
+                          Ajouter
+                        </button>
+                        <button type="button" onClick={() => setShowAddRaison(false)} className="px-2 py-1.5 text-gray-400 hover:text-gray-600 text-xs">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                    <select className={inputCls(formData.raisonRetour)} value={formData.raisonRetour} onChange={set("raisonRetour")}>
+                      <option value="">— Sélectionner une raison —</option>
+                      {raisonRetourOptions.map(o => <option key={o.id} value={o.nom}>{o.nom}</option>)}
+                    </select>
+                    {raisonRetourOptions.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {raisonRetourOptions.map(o => (
+                          <div key={o.id} className="flex items-center gap-1 bg-white border border-orange-200 px-2 py-1 rounded-lg text-[10px] font-bold text-orange-700">
+                            {editingRaisonId === o.id ? (
+                              <>
+                                <input
+                                  className="border-b border-orange-400 bg-transparent text-[10px] font-bold outline-none w-24"
+                                  value={editingRaisonNom}
+                                  onChange={e => setEditingRaisonNom(e.target.value)}
+                                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleEditRaisonRetour(e as any); } }}
+                                  autoFocus
+                                />
+                                <button type="button" onClick={handleEditRaisonRetour} className="text-green-500 hover:text-green-700">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                </button>
+                                <button type="button" onClick={() => { setEditingRaisonId(null); setEditingRaisonNom(""); }} className="text-gray-400 hover:text-gray-600">
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <span>{o.nom}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => { setEditingRaisonId(o.id); setEditingRaisonNom(o.nom); setShowAddRaison(false); }}
+                                  className="text-orange-300 hover:text-orange-600"
+                                >
+                                  <FileText className="w-3 h-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleDeleteRaisonRetour(o.id, o.nom, e)}
+                                  className="text-red-300 hover:text-red-500"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className={labelCls}>Date de retour</label>
+                    <input type="date" className={inputCls(formData.dateRetour)} value={formData.dateRetour} onChange={set("dateRetour")} />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className={labelCls}>N° Facture</label>
+                    <input className={inputCls(formData.numFactureRetour)} placeholder="Ex: FAC-2024-001" value={formData.numFactureRetour} onChange={set("numFactureRetour")} />
+                  </div>
+                </div>
+                
+                {formData.raisonRetour && (
+                  <button 
+                    type="button" 
+                    onClick={() => setFormData({...formData, raisonRetour: "", dateRetour: "", numFactureRetour: ""})}
+                    className="text-[10px] font-bold text-red-400 hover:text-red-600 flex items-center gap-1 pt-2"
+                  >
+                    <Trash2 className="w-3 h-3" /> Effacer les données de retour
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Commentaire */}
+          <div className="col-span-2 space-y-1.5">
+            <label className={labelCls}><MessageSquare className="w-3 h-3" /> Commentaire</label>
+            <textarea
+              className={`${inputCls} resize-none`}
+              rows={3}
+              placeholder="Ajouter un commentaire..."
+              value={formData.commentaire}
+              onChange={set("commentaire")}
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-4 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-6 py-3 rounded-xl border border-gray-200 font-bold text-gray-500 hover:bg-gray-50 transition-all"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="flex-1 px-6 py-3 rounded-xl bg-primary text-white font-bold hover:shadow-lg hover:shadow-primary/30 transition-all flex items-center justify-center gap-2"
+            >
+              <Save className="w-5 h-5" />
+              {isSaving ? "Enregistrement..." : isNew ? "Ajouter à la liste" : "Enregistrer"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

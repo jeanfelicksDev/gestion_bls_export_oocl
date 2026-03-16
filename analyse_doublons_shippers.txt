@@ -1,0 +1,323 @@
+=== ANALYSE APPROFONDIE DES DOUBLONS SHIPPERS ===
+
+GROUPE 1 (Clé: AFRECO)
+👉 Nom suggéré : Afreco
+   Variantes détectées (2) :
+   - Afreco
+   - AFRECO
+
+GROUPE 2 (Clé: AFRICASOURCING)
+👉 Nom suggéré : AFRICASOURCING
+   Variantes détectées (2) :
+   - AFRICASOURCING
+   - AfricaSourcing
+
+GROUPE 3 (Clé: AGLPCIMCCORPORATION)
+👉 Nom suggéré : AGL P/C IMC CORPORATION SA
+   Variantes détectées (2) :
+   - AGL P/C IMC CORPORATION SA
+   - AGLP/CIMCCORPORATIONSA
+
+GROUPE 4 (Clé: BARRYCALLEBAUTNEGOCE)
+👉 Nom suggéré : Barry Callebaut Negoce
+   Variantes détectées (4) :
+   - Barry Callebaut Negoce
+   - BARRY CALLEBAUT NEGOCE
+   - BarryCallebautNegoce
+   - BARRYCALLEBAUTNEGOCE
+
+GROUPE 5 (Clé: BARRYCALLEBAUTSOURCINGAG)
+👉 Nom suggéré : BARRY CALLEBAUT SOURCING AG
+   Variantes détectées (2) :
+   - BARRY CALLEBAUT SOURCING AG
+   - BARRYCALLEBAUTSOURCINGAG
+
+GROUPE 6 (Clé: CAMNEGOCE)
+👉 Nom suggéré : CAM NEGOCE
+   Variantes détectées (2) :
+   - CAM NEGOCE
+   - CAM Negoce
+
+GROUPE 7 (Clé: CAPROCI)
+👉 Nom suggéré : Capro Ci Sa
+   Variantes détectées (2) :
+   - Capro Ci Sa
+   - CAPRO CI
+
+GROUPE 8 (Clé: CARGILLCOTTON)
+👉 Nom suggéré : Cargill Cotton Ltd.
+   Variantes détectées (3) :
+   - Cargill Cotton Ltd.
+   - CargillCottonLtd.
+   - CARGILLCOTTON
+
+GROUPE 9 (Clé: COMPAGNIEDESCAOUTCHOUCS)
+👉 Nom suggéré : COMPAGNIEDESCAOUTCHOUCS
+   Variantes détectées (2) :
+   - COMPAGNIEDESCAOUTCHOUCS
+   - CompagniedesCaoutchoucs
+
+GROUPE 10 (Clé: COMPAGNIEDESCAOUTCHOUCSDUPAKIDIE)
+👉 Nom suggéré : Compagnie des Caoutchoucs du Pakidie
+   Variantes détectées (3) :
+   - Compagnie des Caoutchoucs du Pakidie
+   - Compagnie Des Caoutchoucs Du Pakidie
+   - CompagnieDesCaoutchoucsDuPakidie
+
+GROUPE 11 (Clé: COMPAGNIEDETRANSFORMATIONDUCAOUTCHOUCIVOIRIEN)
+👉 Nom suggéré : COMPAGNIE DE TRANSFORMATION DU 
+CAOUTCHOUC IVOIRIEN
+   Variantes détectées (5) :
+   - COMPAGNIE DE TRANSFORMATION DU 
+CAOUTCHOUC IVOIRIEN
+   - Compagnie De Transformation Du Caoutchouc Ivoirien
+   - COMPAGNIE DE TRANSFORMATION DU CAOUTCHOUC IVOIRIEN
+   - CompagniedeTransformationduCaoutchoucIvoirien
+   - COMPAGNIEDETRANSFORMATIONDUCAOUTCHOUCIVOIRIEN
+
+GROUPE 12 (Clé: COMPAGNIEMODERNEDEPRODUCIONDECAOUTCHOU)
+👉 Nom suggéré : COMPAGNIEMODERNE
+DEPRODUCIONDECAOUTCHOU
+   Variantes détectées (2) :
+   - COMPAGNIEMODERNE
+DEPRODUCIONDECAOUTCHOU
+   - COMPAGNIEMODERNEDEPRODUCION
+DECAOUTCHOU
+
+GROUPE 13 (Clé: COMPAGNIEMODERNEDEPRODUCTIONDECAOUTCHOUC)
+👉 Nom suggéré : COMPAGNIE MODERNE DE PRODUCTION DE CAOUTCHOUC
+   Variantes détectées (2) :
+   - COMPAGNIE MODERNE DE PRODUCTION DE CAOUTCHOUC
+   - COMPAGNIEMODERNEDEPRODUCTIONDECAOUTCHOUC
+
+GROUPE 14 (Clé: CONTINENTALRUBBER)
+👉 Nom suggéré : CONTINENTALRUBBERSA
+   Variantes détectées (2) :
+   - CONTINENTALRUBBERSA
+   - ContinentalRubber
+
+GROUPE 15 (Clé: DIAKITECOCOAPRODUCTS)
+👉 Nom suggéré : DIAKITECOCOAPRODUCTSSARL
+   Variantes détectées (4) :
+   - DIAKITECOCOAPRODUCTSSARL
+   - Diakite Cocoa Products
+   - DiakiteCocoaProducts
+   - DIAKITECOCOAPRODUCTS
+
+GROUPE 16 (Clé: DORADOIVORY)
+👉 Nom suggéré : DORADO IVORY SA
+   Variantes détectées (2) :
+   - DORADO IVORY SA
+   - Dorado Ivory Sa
+
+GROUPE 17 (Clé: ECOOKIMCOOPCA)
+👉 Nom suggéré : ECOOKIMCOOP-CA
+   Variantes détectées (2) :
+   - ECOOKIMCOOP-CA
+   - ECOOKIMCOOPCA
+
+GROUPE 18 (Clé: ETSKJSELU)
+👉 Nom suggéré : ETS KJS ELU
+   Variantes détectées (4) :
+   - ETS KJS ELU
+   - Ets Kjs Elu
+   - ETSKJSELU
+   - EtsKjsElu
+
+GROUPE 19 (Clé: EURORIJNCROSSTRADEBV)
+👉 Nom suggéré : Euro-Rijn Cross Trade B.V.
+   Variantes détectées (3) :
+   - Euro-Rijn Cross Trade B.V.
+   - Euro-RijnCrossTradeB.V.
+   - Euro-RijnCrossTradeB.V
+
+GROUPE 20 (Clé: FOODSCO)
+👉 Nom suggéré : Foods' CO SA
+   Variantes détectées (5) :
+   - Foods' CO SA
+   - FOODS'CO SA
+   - FOODS'COSA
+   - FOOD'sCO
+   - FOODS'CO
+
+GROUPE 21 (Clé: GEANTCA)
+👉 Nom suggéré : Geant Ca
+   Variantes détectées (2) :
+   - Geant Ca
+   - GEANTCA
+
+GROUPE 22 (Clé: IDHLIVOIRIENNEDHEVEA)
+👉 Nom suggéré : IDH - L'IVOIRIENNE d'HEVEA
+   Variantes détectées (5) :
+   - IDH - L'IVOIRIENNE d'HEVEA
+   - IDH - L'IVOIRIENNE D'HEVEA
+   - IDH- L'Ivoirienne D'Hevea
+   - IDH-L'IvoirienneD'Hevea
+   - IDH-L'IVOIRIENNEd'HEVEA
+
+GROUPE 23 (Clé: LACOMPAGNIEDESCAOUTCHOUCS)
+👉 Nom suggéré : LA COMPAGNIE DES CAOUTCHOUCS
+   Variantes détectées (2) :
+   - LA COMPAGNIE DES CAOUTCHOUCS
+   - LACOMPAGNIEDESCAOUTCHOUCS
+
+GROUPE 24 (Clé: MBSGICOOPRAMOVIT)
+👉 Nom suggéré : MBSGI-COOPRAMOVIT SARL
+   Variantes détectées (3) :
+   - MBSGI-COOPRAMOVIT SARL
+   - MBSGI-COOPRAMOVITSARL
+   - MBSGICOOPRAMOVITSARL
+
+GROUPE 25 (Clé: OCEAN)
+👉 Nom suggéré : OCEANSA
+   Variantes détectées (2) :
+   - OCEANSA
+   - Ocean
+
+GROUPE 26 (Clé: OLAMAGRIRUBBERCI)
+👉 Nom suggéré : OLAM AGRI RUBBER CI
+   Variantes détectées (3) :
+   - OLAM AGRI RUBBER CI
+   - OLAM AGRI RUBBER CI
+   - OLAMAGRIRUBBERCI
+
+GROUPE 27 (Clé: OLAMAGRIRUBBERCOTEDIVOIRE)
+👉 Nom suggéré : OLAM AGRI RUBBER COTE DIVOIRE
+   Variantes détectées (3) :
+   - OLAM AGRI RUBBER COTE DIVOIRE
+   - OLAMAGRIRUBBERCOTED'IVOIRE
+   - OLAMAGRIRUBBERCOTEDIVOIRE
+
+GROUPE 28 (Clé: OLAMIVOIRE)
+👉 Nom suggéré : Olam Ivoire Sa
+   Variantes détectées (4) :
+   - Olam Ivoire Sa
+   - OLAM IVOIRE SA
+   - OlamIvoireSa
+   - OLAMIVOIRESA
+
+GROUPE 29 (Clé: QUANGTHIENIMEX)
+👉 Nom suggéré : QUANG THIEN IMEX S.A.
+   Variantes détectées (7) :
+   - QUANG THIEN IMEX S.A.
+   - Quang Thien Imex S.A
+   - QUANG THIEN IMEX SA
+   - Quang Thien Imex Sa
+   - QuangThienImexS.A
+   - QUANGTHIENIMEXS.A
+   - QuangThienImexSa
+
+GROUPE 30 (Clé: ROYALKEANINTERNATIONALFZE)
+👉 Nom suggéré : ROYALKEANINTERNATIONALFZE
+   Variantes détectées (2) :
+   - ROYALKEANINTERNATIONALFZE
+   - RoyalKeanInternationalFze
+
+GROUPE 31 (Clé: SAGROCOM)
+👉 Nom suggéré : SAGROCOMS.A.R.L
+   Variantes détectées (2) :
+   - SAGROCOMS.A.R.L
+   - SAGROCOMSARL
+
+GROUPE 32 (Clé: SAICOMMODITIES)
+👉 Nom suggéré : Sai Commodities Ltd
+   Variantes détectées (2) :
+   - Sai Commodities Ltd
+   - SaiCommoditiesLtd
+
+GROUPE 33 (Clé: SAPH)
+👉 Nom suggéré : Saph
+   Variantes détectées (2) :
+   - Saph
+   - SAPH
+
+GROUPE 34 (Clé: SCC)
+👉 Nom suggéré : Scc
+   Variantes détectées (2) :
+   - Scc
+   - SCC
+
+GROUPE 35 (Clé: SCOOPSIAC)
+👉 Nom suggéré : Scoopsiac
+   Variantes détectées (2) :
+   - Scoopsiac
+   - SCOOPSIAC
+
+GROUPE 36 (Clé: SECO)
+👉 Nom suggéré : Seco Sa
+   Variantes détectées (2) :
+   - Seco Sa
+   - SECO
+
+GROUPE 37 (Clé: SOCIETEAFRICAINEDECACAO)
+👉 Nom suggéré : SOCIETE AFRICAINE DE CACAO
+   Variantes détectées (3) :
+   - SOCIETE AFRICAINE DE CACAO
+   - SOCIETEAFRICAINEDECACAO
+   - SocieteAfricaineDeCacao
+
+GROUPE 38 (Clé: SOCIETECOOPERATIVESIMPLIFIEE)
+👉 Nom suggéré : SOCIETE COOPERATIVE SIMPLIFIEE
+   Variantes détectées (2) :
+   - SOCIETE COOPERATIVE SIMPLIFIEE
+   - SOCIETECOOPERATIVESIMPLIFIEE
+
+GROUPE 39 (Clé: SOCIETEIVOIRIENNECOCOA)
+👉 Nom suggéré : SOCIETE IVOIRIENNE COCOA
+   Variantes détectées (2) :
+   - SOCIETE IVOIRIENNE COCOA
+   - SOCIETEIVOIRIENNECOCOA
+
+GROUPE 40 (Clé: SOCIETEPOURLESPRODUITSAGRICOLES)
+👉 Nom suggéré : SocietePourLesProduitsAgricoles
+   Variantes détectées (2) :
+   - SocietePourLesProduitsAgricoles
+   - SOCIETEPOURLESPRODUITSAGRICOLES
+
+GROUPE 41 (Clé: STEPHANDLAMTRADING)
+👉 Nom suggéré : STEPH AND LAM TRADING
+   Variantes détectées (3) :
+   - STEPH AND LAM TRADING
+   - STEPHANDLAMTRADING
+   - StephAndLamTrading
+
+GROUPE 42 (Clé: TANIVOIRE)
+👉 Nom suggéré : TAN IVOIRE SA
+   Variantes détectées (4) :
+   - TAN IVOIRE SA
+   - TanIvoireSa
+   - TANIVOIRESA
+   - TANIVOIRE
+
+GROUPE 43 (Clé: TECHCOMCAPITAL)
+👉 Nom suggéré : TECHCOMCAPITALINC.
+   Variantes détectées (3) :
+   - TECHCOMCAPITALINC.
+   - TechcomCapitalInc
+   - TECHCOMCAPITALINC
+
+GROUPE 44 (Clé: TEKA)
+👉 Nom suggéré : TekaSarl
+   Variantes détectées (2) :
+   - TekaSarl
+   - TEKASARL
+
+GROUPE 45 (Clé: TRADSMART)
+👉 Nom suggéré : TRAD' SMART
+   Variantes détectées (2) :
+   - TRAD' SMART
+   - TRAD' SMART
+
+GROUPE 46 (Clé: TROPICORE)
+👉 Nom suggéré : Tropicore S.A.
+   Variantes détectées (2) :
+   - Tropicore S.A.
+   - TropicoreS.A.
+
+GROUPE 47 (Clé: USCACICOOPCA)
+👉 Nom suggéré : Uscaci Coop Ca
+   Variantes détectées (2) :
+   - Uscaci Coop Ca
+   - UscaciCoopCa
+
+Total de 47 groupes de doublons détectés.

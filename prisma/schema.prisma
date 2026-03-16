@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Coque {
+  id        String   @id @default(cuid())
+  nom       String   @unique
+  navires   Navire[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Navire {
+  id        String   @id @default(cuid())
+  nom       String   @unique
+  coqueId   String?
+  coque     Coque?   @relation(fields: [coqueId], references: [id])
+  voyages   Voyage[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Voyage {
+  id        String   @id @default(cuid())
+  navireId  String
+  navire    Navire   @relation(fields: [navireId], references: [id], onDelete: Cascade)
+  numero    String
+  eta       DateTime?
+  etd       DateTime?
+  etdConfirmed Boolean @default(false)
+  bls       BL[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BL {
+  id                 String    @id @default(cuid())
+  booking            String    @unique
+  pod                String?
+  shipper            String?
+  statut             String?
+  typeConnaissement  String?   // OBL, SWB
+  tender             String?
+  freighting         String?
+  valeurFret         String?
+  montantFret        String?
+  deviseFret         String?
+  dateRetrait        DateTime?
+  statutFret         String?   // Fret_ABJ, Fret_OK, Unrated, A_Revoir
+  numTimbre          String?
+  statutCorrection   String?   // OK_Print, Attente_Correction, Attente_OK
+  commentaire        String?
+  
+  // Champs pour le retour de BL
+  raisonRetour       String?
+  dateRetour         DateTime?
+  numFactureRetour   String?
+
+  voyageId           String
+  voyage             Voyage    @relation(fields: [voyageId], references: [id], onDelete: Cascade)
+  autresCharges      AutreCharge[]
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model AutreCharge {
+  id          String   @id @default(cuid())
+  type        String   // Libellé de la charge
+  montant     String
+  observation String?
+  blId        String
+  bl          BL       @relation(fields: [blId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TypeCharge {
+  id        String   @id @default(cuid())
+  nom       String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RaisonRetour {
+  id        String   @id @default(cuid())
+  nom       String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
