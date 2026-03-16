@@ -223,7 +223,7 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
             <p className="text-xs font-bold text-blue-600 relative z-10">Status Serveur</p>
             <div className="flex items-center gap-2 mt-2 relative z-10">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-sm shadow-green-500" />
-              <span className="text-[10px] font-bold text-blue-900/60 uppercase tracking-wider">Connecté (SQLite)</span>
+              <span className="text-[10px] font-bold text-blue-900/60 uppercase tracking-wider">Connecté (Cloud)</span>
             </div>
           </div>
         </div>
