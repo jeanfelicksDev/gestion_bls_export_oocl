@@ -152,7 +152,14 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
               </p>
             </div>
           </div>
-{/* Facture button removed */}
+          <button
+            onClick={() => setShowBilling(true)}
+            className="flex flex-col items-center justify-center p-3 bg-white/70 hover:bg-white text-gray-700 rounded-2xl border border-white/50 shadow-sm transition-all hover:shadow-md active:scale-95 group"
+            title="Tableau de facturation"
+          >
+            <FileSpreadsheet className="w-6 h-6 text-emerald-600 group-hover:scale-110 transition-transform" />
+            <span className="text-[8px] font-black uppercase mt-1 text-gray-400">Facture</span>
+          </button>
 
           <div className="flex items-center gap-4">
             <div className="flex gap-2 text-sm">
@@ -167,11 +174,31 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
             </div>
             {voyage.etdConfirmed ? (
               <div className="flex gap-2">
-                {/* Ajouter BL and Trash buttons removed */}
+                <button
+                  onClick={() => onEditBL(null as any, voyage)}
+                  className="bg-primary text-white px-5 py-2.5 rounded-xl shadow-lg shadow-primary/20 transition-all font-bold text-sm flex items-center gap-2 hover:scale-[1.02] active:scale-95"
+                >
+                  <Plus className="w-4 h-4" />
+                  Ajouter BL
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={isUpdating}
+                  className="bg-red-50 hover:bg-red-500 text-red-500 hover:text-white p-2.5 rounded-xl transition-all border border-red-100"
+                  title="Supprimer le voyage"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
               </div>
             ) : (
               <div className="flex gap-2">
-                {/* Ajouter BL button removed */}
+                <button
+                  onClick={() => onEditBL(null as any, voyage)}
+                  className="bg-primary text-white px-5 py-2.5 rounded-xl shadow-lg shadow-primary/20 transition-all font-bold text-sm flex items-center gap-2 hover:scale-[1.02] active:scale-95"
+                >
+                  <Plus className="w-4 h-4" />
+                  Ajouter BL
+                </button>
                 <button
                   onClick={confirmETD}
                   disabled={isUpdating}
@@ -184,7 +211,14 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
                   )}
                   Confirmer ETD
                 </button>
-                {/* Trash button removed */}
+                <button
+                  onClick={handleDelete}
+                  disabled={isUpdating}
+                  className="bg-white/10 hover:bg-red-500 text-white p-2 rounded-xl backdrop-blur-md transition-all border border-white/20"
+                  title="Supprimer le voyage"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
               </div>
             )}
           </div>
@@ -266,7 +300,13 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      {/* Trash icon removed */}
+                      <button 
+                        onClick={() => handleDeleteBL(bl.id, bl.booking)}
+                        className="p-2 text-gray-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </td>
                   </tr>
                 );
