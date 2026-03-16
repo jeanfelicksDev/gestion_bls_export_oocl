@@ -6,6 +6,8 @@ import VoyageCard from "@/components/VoyageCard";
 import BLEditModal from "@/components/BLEditModal";
 import { FileSpreadsheet, Layers, Search, RefreshCw, Ship, Anchor, AlertCircle, ShipWheel, Clock, CalendarIcon } from "lucide-react";
 import { calculateWorkingDays } from "@/lib/utils";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 export default function Dashboard() {
   const { voyages, loading, error, refresh } = useVoyages();
@@ -147,7 +149,15 @@ export default function Dashboard() {
                   <div className="flex justify-between items-start mb-6">
                     <div>
                       <h3 className="font-black text-gray-800 text-lg group-hover:text-primary transition-colors">{v.navire?.nom}</h3>
-                      <p className="font-mono text-xs font-bold text-gray-400 mt-1 bg-gray-50 inline-block px-2 py-1 rounded-md">{v.numero}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="font-mono text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-md">{v.numero}</p>
+                        {v.etd && (
+                          <div className="flex items-center gap-1.5 bg-orange-50 text-orange-700 px-2 py-1 rounded-md border border-orange-100 shadow-sm">
+                            <CalendarIcon className="w-3 h-3" />
+                            <span className="text-[10px] font-black">{format(new Date(v.etd), "dd/MM/yy")}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="bg-orange-50 p-3 rounded-2xl group-hover:bg-orange-500 transition-colors">
                       <Anchor className="w-6 h-6 text-orange-500 group-hover:text-white transition-colors" />
