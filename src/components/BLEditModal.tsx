@@ -307,18 +307,24 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
         }
       }
 
-      // Validation : Documents obligatoires selon le type
-      if (formData.typeConnaissement === "OBL") {
-        if (!formData.urlORG || !formData.urlNNG) {
-          alert("Erreur : Pour un OBL (Original), vous devez impérativement téléverser les fichiers ORG et NNG.");
-          setIsSaving(false);
-          return;
-        }
-      } else if (formData.typeConnaissement === "SWB") {
-        if (!formData.urlSWB) {
-          alert("Erreur : Pour un SWB (Seaway Bill), vous devez impérativement téléverser le fichier SWB.");
-          setIsSaving(false);
-          return;
+      // Validation : Documents obligatoires (Uniquement pour les ETD > 01/04/2026)
+      // Si l'ETD est "moins récent" (antérieur) au 01/04/2026, on ne bloque pas.
+      const etdString = voyage.etd ? voyage.etd.substring(0, 10) : ""; // "YYYY-MM-DD"
+      const threshold = "2026-04-01";
+
+      if (etdString && etdString > threshold) {
+        if (formData.typeConnaissement === "OBL") {
+          if (!formData.urlORG || !formData.urlNNG) {
+            alert("Erreur : Pour un OBL (Original), vous devez impérativement téléverser les fichiers ORG et NNG.");
+            setIsSaving(false);
+            return;
+          }
+        } else if (formData.typeConnaissement === "SWB") {
+          if (!formData.urlSWB) {
+            alert("Erreur : Pour un SWB (Seaway Bill), vous devez impérativement téléverser le fichier SWB.");
+            setIsSaving(false);
+            return;
+          }
         }
       }
 
