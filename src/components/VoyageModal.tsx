@@ -30,7 +30,6 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
   const [navires, setNavires] = useState<Navire[]>([]);
   const [voyages, setVoyages] = useState<Voyage[]>([]);
   const [navireId, setNavireId] = useState("");
-  const [uploadingVoyage, setUploadingVoyage] = useState<Voyage | null>(null);
   const [editingVoyage, setEditingVoyage] = useState<Voyage | null>(null);
   const [numero, setNumero] = useState("");
   const [eta, setEta] = useState("");
@@ -267,14 +266,6 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => setUploadingVoyage(v)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all"
-                              title="Charger les BLs depuis un fichier Excel"
-                            >
-                              <Upload className="w-3.5 h-3.5" />
-                              Charger les BLs
-                            </button>
-                            <button
                               onClick={() => handleDelete(v.id)}
                               className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                               title="Supprimer"
@@ -292,14 +283,6 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
           </div>
         </div>
       </div>
-      {uploadingVoyage && (
-        <BLUploadModal
-          voyageId={uploadingVoyage.id}
-          voyageLabel={`${uploadingVoyage.navire?.nom} — ${uploadingVoyage.numero}`}
-          onClose={() => setUploadingVoyage(null)}
-          onSuccess={async () => { await fetchVoyages(); onSuccess(); }}
-        />
-      )}
     </div>
   );
 }
