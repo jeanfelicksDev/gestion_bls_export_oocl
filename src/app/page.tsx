@@ -308,11 +308,6 @@ export default function Dashboard() {
                       <h3 className="font-mono font-black text-gray-800 text-xl group-hover:text-primary transition-colors">{bl.booking}</h3>
                       <div className="flex items-center gap-2 mt-1 px-1">
                         <span className="text-[10px] font-bold text-gray-400 max-w-[150px] truncate" title={bl.shipper}>{bl.shipper || "Sans chargeur"}</span>
-                        {bl.numTimbre && (
-                          <span className="text-[10px] font-black text-primary bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10">
-                            {bl.numTimbre}
-                          </span>
-                        )}
                       </div>
                     </div>
                     <div className={`${viewMode === 'critical' ? 'bg-orange-50 group-hover:bg-orange-500' : 'bg-purple-50 group-hover:bg-purple-500'} p-3 rounded-2xl transition-colors`}>
