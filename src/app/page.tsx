@@ -47,7 +47,10 @@ export default function Dashboard() {
         }
         
         if (viewMode === "no-scanned" && !bl.isScanne) {
-          all.push({ bl, voyage: v, daysSinceETD: days });
+          const etdStr = v.etd ? (typeof v.etd === "string" ? v.etd.substring(0, 10) : new Date(v.etd).toISOString().substring(0, 10)) : "";
+          if (etdStr > "2026-04-01") {
+            all.push({ bl, voyage: v, daysSinceETD: days });
+          }
         }
         
         if (viewMode === "unrated" && bl.statut?.toLowerCase() === "unrated") {
@@ -113,7 +116,8 @@ export default function Dashboard() {
       });
     }
     if (viewMode === "no-scanned") {
-      return v.bls.some((bl: any) => !bl.isScanne);
+      const etdStr = v.etd ? (typeof v.etd === "string" ? v.etd.substring(0, 10) : new Date(v.etd).toISOString().substring(0, 10)) : "";
+      return etdStr > "2026-04-01" && v.bls.some((bl: any) => !bl.isScanne);
     }
     if (viewMode === "unrated") {
       return v.bls.some((bl: any) => bl.statut?.toLowerCase() === "unrated");
@@ -139,7 +143,11 @@ export default function Dashboard() {
   const totalBLs = voyages.reduce((acc, v) => acc + v.bls.length, 0);
   const totalVoyages = voyages.length;
   const totalUnreleasedBLs = voyages.reduce((acc, v) => acc + v.bls.filter((bl: any) => !bl.dateRetrait).length, 0);
-  const totalNoScannedBLs = voyages.reduce((acc, v) => acc + v.bls.filter((bl: any) => !bl.isScanne).length, 0);
+  const totalNoScannedBLs = voyages.reduce((acc, v) => {
+    const etdStr = v.etd ? (typeof v.etd === "string" ? v.etd.substring(0, 10) : new Date(v.etd).toISOString().substring(0, 10)) : "";
+    if (etdStr <= "2026-04-01") return acc;
+    return acc + v.bls.filter((bl: any) => !bl.isScanne).length;
+  }, 0);
   const totalUnratedBLs = voyages.reduce((acc, v) => acc + v.bls.filter((bl: any) => bl.statut?.toLowerCase() === "unrated").length, 0);
   const totalNoFreightBLs = voyages.reduce((acc, v) => acc + v.bls.filter((bl: any) => !bl.statut || bl.statut.trim() === "").length, 0);
   const totalCriticalBLs = voyages.reduce((acc, v) => {
