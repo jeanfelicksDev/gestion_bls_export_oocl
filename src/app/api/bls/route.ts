@@ -35,6 +35,7 @@ export async function POST(req: Request) {
         isNNG: Boolean(body.isNNG),
         isSWB: Boolean(body.isSWB),
         isScanne: Boolean(body.isScanne),
+        isNoteTraitee: Boolean(body.isNoteTraitee),
         autresCharges: body.autresCharges ? {
           create: body.autresCharges.map((c: any) => ({
             type: c.type,

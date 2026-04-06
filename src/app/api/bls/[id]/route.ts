@@ -33,6 +33,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           isNNG: typeof body.isNNG !== 'undefined' ? Boolean(body.isNNG) : undefined,
           isSWB: typeof body.isSWB !== 'undefined' ? Boolean(body.isSWB) : undefined,
           isScanne: typeof body.isScanne !== 'undefined' ? Boolean(body.isScanne) : undefined,
+          isNoteTraitee: typeof body.isNoteTraitee !== 'undefined' ? Boolean(body.isNoteTraitee) : undefined,
         },
       });
 
