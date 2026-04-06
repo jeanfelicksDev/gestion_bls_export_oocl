@@ -69,6 +69,7 @@ model BL {
   urlNNG             String?
   urlSWB             String?
   urlScanne          String?
+  isNoteTraitee      Boolean   @default(false)
 
   voyageId           String
   voyage             Voyage    @relation(fields: [voyageId], references: [id], onDelete: Cascade)

@@ -66,6 +66,7 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
     raisonRetour: bl?.raisonRetour || "",
     dateRetour: bl?.dateRetour ? format(new Date(bl.dateRetour), "yyyy-MM-dd") : "",
     numFactureRetour: bl?.numFactureRetour || "",
+    isNoteTraitee: bl?.isNoteTraitee || false,
   });
 
   const [autresCharges, setAutresCharges] = useState<AutreCharge[]>(
@@ -176,6 +177,35 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
     }
   };
 
+  const handleDeleteFile = async (type: "ORG" | "NNG" | "SWB" | "SCANNE") => {
+    const urlField = type === "SCANNE" ? "urlScanne" : `url${type}` as keyof typeof formData;
+    const url = formData[urlField];
+    if (!url) return;
+
+    if (!window.confirm(`Voulez-vous vraiment supprimer définitivement le document ${type} ?`)) return;
+
+    setIsUploading(true);
+    setActiveUploadType(type);
+    try {
+      const res = await fetch(`/api/bls/upload?blId=${bl.id}&type=${type}&url=${encodeURIComponent(url as string)}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        const field = type === "SCANNE" ? "isScanne" : `is${type}` as keyof typeof formData;
+        setFormData(prev => ({ ...prev, [urlField]: "", [field]: false }));
+        alert("Document supprimé avec succès.");
+      } else {
+        alert("Erreur lors de la suppression.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erreur réseau");
+    } finally {
+      setIsUploading(false);
+      setActiveUploadType(null);
+    }
+  };
+
   const isDateRetraitSaisie = !!formData.dateRetrait;
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -187,6 +217,11 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
       }
       return next;
     });
+  };
+
+  const handleCheckboxChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked;
+    setFormData((prev) => ({ ...prev, [field]: checked }));
   };
 
   const addCharge = () => {
@@ -220,11 +255,11 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
       
       let details = "";
       if (typeConnaissement === "OBL") {
-        details = "un OBL (03 copies originales + 02 copies non négociables)";
+        details = `Le OBL ${booking} (03 copies originales + 02 copies non négociables)`;
       } else if (typeConnaissement === "SWB") {
-        details = "un SWB (01 copie SWB)";
+        details = `Le SWB ${booking} (01 copie SWB)`;
       } else {
-        details = `un « ${typeConnaissement || "type de connaissement"} »`;
+        details = `Le « ${typeConnaissement || "type de connaissement"} » ${booking}`;
       }
 
       doc.text(text1, margin, y);
@@ -405,7 +440,7 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
                             type="button"
                             disabled={isDisabled}
                             onClick={() => handleToggleAndOpen(type)}
-                            className={`w-full py-3 rounded-xl font-black text-[10px] transition-all border-2 flex items-center justify-center gap-2 ${
+                            className={`w-full py-3 rounded-xl font-black text-[10px] transition-all border-2 flex items-center justify-between px-4 gap-2 ${
                               !isDisabled
                                 ? isActive
                                   ? type === "SWB" ? "bg-emerald-600 border-emerald-600 text-white" : type === "NNG" ? "bg-indigo-600 border-indigo-600 text-white" : "bg-slate-800 border-slate-800 text-white"
@@ -413,22 +448,37 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
                                 : "bg-slate-50 border-slate-50 text-slate-200 cursor-not-allowed"
                             }`}
                           >
-                            {isActive && <Eye className="w-3.5 h-3.5" />}
-                            {type}
+                            <span className="flex-1 text-center">{type}</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${hasUrl ? "bg-white/20 text-white" : "bg-slate-100 text-slate-400"}`}>
+                              {hasUrl ? "1" : "0"}
+                            </span>
                           </button>
                           
-                          {/* Upload Icon Overlay */}
+                          {/* Upload/Delete Action Overlay */}
                           {!isDisabled && !isNew && (
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); handleUploadClick(type); }}
-                              className={`absolute -top-3 -right-2 p-2 rounded-full shadow-xl border-2 transition-all hover:scale-110 active:scale-95 z-20 ${
-                                isThisUploading ? "bg-orange-500 border-white animate-pulse" : hasUrl ? "bg-emerald-500 border-white text-white" : "bg-primary border-white text-white ring-2 ring-primary/20"
-                              }`}
-                              title="Téléverser le PDF Cloud"
-                            >
-                              {isThisUploading ? <Loader2 className="w-3 h-3 animate-spin text-white" /> : <CloudUpload className="w-3 h-3" />}
-                            </button>
+                            <div className="absolute -top-3 -right-2 flex items-center gap-1 z-20">
+                              {hasUrl && !isThisUploading && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); handleDeleteFile(type); }}
+                                  className="p-1 px-2 rounded-lg bg-rose-500 border-2 border-white text-white shadow-lg shadow-rose-500/20 hover:bg-rose-600 transition-all hover:scale-110 active:scale-95"
+                                  title="Supprimer définitivement du Cloud"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              )}
+                              
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleUploadClick(type); }}
+                                className={`p-2 rounded-full shadow-xl border-2 transition-all hover:scale-110 active:scale-95 ${
+                                  isThisUploading ? "bg-orange-500 border-white animate-pulse" : hasUrl ? "bg-emerald-500 border-white text-white" : "bg-primary border-white text-white ring-2 ring-primary/20"
+                                }`}
+                                title={hasUrl ? "Remplacer le PDF actuel" : "Téléverser le PDF Cloud"}
+                              >
+                                {isThisUploading ? <Loader2 className="w-3 h-3 animate-spin text-white" /> : <CloudUpload className="w-3 h-3" />}
+                              </button>
+                            </div>
                           )}
                         </div>
                       );
@@ -438,36 +488,62 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
 
                 <div className="col-span-2 pt-2">
                   <div className="relative group">
-                     <button
+                      <button
                         type="button"
                         onClick={() => handleToggleAndOpen("SCANNE")}
-                        className={`w-full py-3 rounded-xl font-black text-[11px] transition-all border-2 flex items-center justify-center gap-2 ${
+                        className={`w-full py-3 rounded-xl font-black text-[11px] transition-all border-2 flex items-center justify-between px-6 gap-2 ${
                           formData.isScanne ? "bg-blue-600 border-blue-600 text-white shadow-lg" : "bg-white border-blue-100 text-blue-600"
                         }`}
                       >
-                        {formData.isScanne && <Eye className="w-4 h-4" />}
-                        DOSSIER SCANNÉ
+                         <span className="flex-1 text-center">DOSSIER SCANNÉ</span>
+                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${formData.urlScanne ? "bg-white/20 text-white" : "bg-blue-50 text-blue-300"}`}>
+                            {formData.urlScanne ? "1" : "0"}
+                         </span>
                       </button>
 
-                      {/* Upload Icon for Scanned Folder */}
+                      {/* Upload/Delete for Scanned Folder */}
                       {!isNew && (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); handleUploadClick("SCANNE"); }}
-                          className={`absolute -top-3 -right-2 p-2 rounded-full shadow-xl border-2 transition-all hover:scale-110 active:scale-95 z-20 ${
-                            isUploading && activeUploadType === "SCANNE" ? "bg-orange-500 border-white animate-pulse" : formData.urlScanne ? "bg-emerald-500 border-white text-white" : "bg-primary border-white text-white ring-2 ring-primary/20"
-                          }`}
-                          title="Téléverser le Dossier Scanné"
-                        >
-                          {isUploading && activeUploadType === "SCANNE" ? <Loader2 className="w-3 h-3 animate-spin text-white" /> : <CloudUpload className="w-3 h-3" />}
-                        </button>
+                        <div className="absolute -top-3 -right-2 flex items-center gap-1 z-20">
+                           {formData.urlScanne && !(isUploading && activeUploadType === "SCANNE") && (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleDeleteFile("SCANNE"); }}
+                                className="p-1 px-2 rounded-lg bg-rose-500 border-2 border-white text-white shadow-lg shadow-rose-500/20 hover:bg-rose-600 transition-all hover:scale-110 active:scale-95"
+                                title="Supprimer définitivement du Cloud"
+                              >
+                                <Trash2 className="w-3" />
+                              </button>
+                           )}
+                           
+                           <button
+                             type="button"
+                             onClick={(e) => { e.stopPropagation(); handleUploadClick("SCANNE"); }}
+                             className={`p-2 rounded-full shadow-xl border-2 transition-all hover:scale-110 active:scale-95 ${
+                               isUploading && activeUploadType === "SCANNE" ? "bg-orange-500 border-white animate-pulse" : formData.urlScanne ? "bg-emerald-500 border-white text-white" : "bg-primary border-white text-white ring-2 ring-primary/20"
+                             }`}
+                             title={formData.urlScanne ? "Remplacer le dossier" : "Téléverser le Dossier Scanné"}
+                           >
+                             {isUploading && activeUploadType === "SCANNE" ? <Loader2 className="w-3 h-3 animate-spin text-white" /> : <CloudUpload className="w-3 h-3" />}
+                           </button>
+                        </div>
                       )}
                   </div>
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className={labelCls}><MessageSquare className="w-3 h-3" /> Note Interne</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className={labelCls}><MessageSquare className="w-3 h-3" /> Note Interne</label>
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <span className="text-[9px] font-black text-slate-400 group-hover:text-primary transition-colors uppercase tracking-widest">Traité</span>
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 rounded border-2 border-slate-300 text-primary focus:ring-primary/20 transition-all cursor-pointer"
+                      checked={formData.isNoteTraitee}
+                      onChange={handleCheckboxChange("isNoteTraitee")}
+                    />
+                  </label>
+                </div>
                 <textarea className={`${inputCls(formData.commentaire)} resize-none py-3 min-h-[100px] shadow-sm`} placeholder="Ajouter une instruction..." value={formData.commentaire} onChange={set("commentaire")} />
               </div>
             </div>
