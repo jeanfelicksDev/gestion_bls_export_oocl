@@ -321,20 +321,6 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
                           </span>
                         )}
                       </div>
-                      {(bl.numTimbre || bl.commentaire) && (
-                        <div className="mt-1 flex flex-col gap-1">
-                          {bl.numTimbre && (
-                            <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
-                              Timbre: <span className="text-gray-600 font-bold">{bl.numTimbre}</span>
-                            </span>
-                          )}
-                          {bl.commentaire && (
-                            <span className="text-[10px] text-purple-700 font-bold bg-purple-50/50 px-1.5 py-0.5 rounded-md border border-purple-100/50 line-clamp-1 max-w-[200px]" title={bl.commentaire}>
-                              {bl.commentaire}
-                            </span>
-                          )}
-                        </div>
-                      )}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-800 font-bold max-w-[200px] truncate">{bl.shipper}</td>
                     <td className="px-6 py-4">
