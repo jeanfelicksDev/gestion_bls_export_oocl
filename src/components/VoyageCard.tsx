@@ -329,7 +329,7 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
                             </span>
                           )}
                           {bl.commentaire && (
-                            <span className="text-[10px] text-gray-800 font-bold italic bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100 line-clamp-1 max-w-[200px]" title={bl.commentaire}>
+                            <span className="text-[10px] text-purple-700 font-bold bg-purple-50/50 px-1.5 py-0.5 rounded-md border border-purple-100/50 line-clamp-1 max-w-[200px]" title={bl.commentaire}>
                               {bl.commentaire}
                             </span>
                           )}

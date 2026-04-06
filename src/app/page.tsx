@@ -356,7 +356,7 @@ export default function Dashboard() {
                            <MessageSquare className="w-3 h-3 text-blue-600 opacity-70" />
                            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Note Interne</span>
                         </div>
-                        <p className="text-[10px] leading-relaxed text-gray-800 font-bold italic line-clamp-2 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                        <p className="text-[10px] leading-relaxed text-purple-700 font-bold line-clamp-2 bg-purple-50/50 p-2 rounded-xl border border-purple-100/50">
                           {bl.commentaire}
                         </p>
                       </div>
