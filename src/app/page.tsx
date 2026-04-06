@@ -305,9 +305,9 @@ export default function Dashboard() {
                   
                   <div className="flex justify-between items-start mb-6">
                     <div>
-                      <h3 className="font-mono font-black text-gray-800 text-xl group-hover:text-primary transition-colors">{bl.booking}</h3>
+                      <h3 className="font-mono font-black text-gray-900 text-xl group-hover:text-primary transition-colors">{bl.booking}</h3>
                       <div className="flex items-center gap-2 mt-1 px-1">
-                        <span className="text-[10px] font-bold text-gray-400 max-w-[150px] truncate" title={bl.shipper}>{bl.shipper || "Sans chargeur"}</span>
+                        <span className="text-[10px] font-bold text-gray-700 max-w-[150px] truncate" title={bl.shipper}>{bl.shipper || "Sans chargeur"}</span>
                       </div>
                     </div>
                     <div className={`${viewMode === 'critical' ? 'bg-orange-50 group-hover:bg-orange-500' : 'bg-purple-50 group-hover:bg-purple-500'} p-3 rounded-2xl transition-colors`}>
@@ -320,23 +320,23 @@ export default function Dashboard() {
                   </div>
                   
                   <div className="space-y-1.5 mb-4 flex-1">
-                    <div className="flex items-center gap-2 text-[11px] text-gray-400">
+                    <div className="flex items-center gap-2 text-[11px] text-gray-700">
                       <Ship className="w-3.5 h-3.5 opacity-70" />
                       <span className="font-semibold truncate">{voyage.navire?.nom || "N/A"}</span>
-                      <span className="font-mono text-[10px] bg-gray-50 px-1.5 py-0.5 rounded-md text-gray-400 font-medium">{voyage.numero}</span>
+                      <span className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded-md text-slate-700 font-bold">{voyage.numero}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-[11px] text-gray-400">
+                    <div className="flex items-center gap-2 text-[11px] text-gray-700">
                       <CalendarIcon className="w-3.5 h-3.5 opacity-70" />
                       <span>ETD:</span>
-                      <span className="font-semibold">{voyage.etd ? format(new Date(voyage.etd), "dd/MM/yy") : "-"}</span>
+                      <span className="font-bold">{voyage.etd ? format(new Date(voyage.etd), "dd/MM/yy") : "-"}</span>
                     </div>
 
                     {/* Affichage des charges additionnelles */}
                     {bl.autresCharges && bl.autresCharges.length > 0 && (
                       <div className="mt-4 pt-3 border-t border-gray-50 space-y-2">
                         <div className="flex items-center gap-1.5">
-                           <Layers className="w-3 h-3 text-primary opacity-50" />
-                           <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Charges</span>
+                           <Layers className="w-3 h-3 text-primary opacity-70" />
+                           <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Charges</span>
                         </div>
                         <div className="flex flex-wrap gap-1.5">
                           {bl.autresCharges.map((c: any, idx: number) => (
@@ -353,10 +353,10 @@ export default function Dashboard() {
                     {bl.commentaire && (
                       <div className="mt-4 pt-3 border-t border-gray-50">
                         <div className="flex items-center gap-1.5 mb-1.5">
-                           <MessageSquare className="w-3 h-3 text-blue-500 opacity-50" />
-                           <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Note Interne</span>
+                           <MessageSquare className="w-3 h-3 text-blue-600 opacity-70" />
+                           <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Note Interne</span>
                         </div>
-                        <p className="text-[10px] leading-relaxed text-slate-600 font-medium italic line-clamp-2 bg-blue-50/30 p-2 rounded-xl border border-blue-50/50">
+                        <p className="text-[10px] leading-relaxed text-gray-800 font-bold italic line-clamp-2 bg-slate-50 p-2 rounded-xl border border-slate-100">
                           {bl.commentaire}
                         </p>
                       </div>

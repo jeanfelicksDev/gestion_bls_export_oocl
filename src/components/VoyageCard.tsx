@@ -329,14 +329,14 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
                             </span>
                           )}
                           {bl.commentaire && (
-                            <span className="text-[10px] text-blue-600 font-medium italic bg-blue-50/50 px-1.5 py-0.5 rounded-md border border-blue-100/50 line-clamp-1 max-w-[200px]" title={bl.commentaire}>
+                            <span className="text-[10px] text-gray-800 font-bold italic bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100 line-clamp-1 max-w-[200px]" title={bl.commentaire}>
                               {bl.commentaire}
                             </span>
                           )}
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 max-w-[200px] truncate">{bl.shipper}</td>
+                    <td className="px-6 py-4 text-sm text-gray-800 font-bold max-w-[200px] truncate">{bl.shipper}</td>
                     <td className="px-6 py-4">
                       <StatusBadge status={bl.dateRetrait ? "RETIRE" : "EN ATTENTE RETRAIT"} />
                     </td>
