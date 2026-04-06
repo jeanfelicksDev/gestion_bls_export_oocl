@@ -478,9 +478,15 @@ export default function Dashboard() {
                         'text-gray-400'
                       }`}>Durée depuis ETD</span>
                       {daysSinceETD !== null ? (
-                        <span className={`font-black text-2xl leading-none drop-shadow-sm ${daysSinceETD > 15 ? 'text-red-500' : daysSinceETD > 10 ? 'text-orange-500' : 'text-green-600'}`}>
-                          +{daysSinceETD} <span className="text-sm font-bold opacity-70">jours</span>
-                        </span>
+                        <div className="flex items-center gap-2 overflow-hidden">
+                          <span className={`font-black text-2xl leading-none drop-shadow-sm flex-shrink-0 ${daysSinceETD > 15 ? 'text-red-500' : daysSinceETD > 10 ? 'text-orange-500' : 'text-green-600'}`}>
+                            +{daysSinceETD} <span className="text-sm font-bold opacity-70">jours</span>
+                          </span>
+                          <span className="text-gray-300 font-light text-xl">|</span>
+                          <span className={`text-[11px] font-black uppercase tracking-tighter truncate ${bl.dateRetrait ? "text-emerald-600" : "text-gray-400"}`}>
+                            {bl.dateRetrait ? "Retiré" : "En attente R."}
+                          </span>
+                        </div>
                       ) : (
                         <span className="font-bold text-gray-400 italic text-sm">Non confirmé</span>
                       )}
