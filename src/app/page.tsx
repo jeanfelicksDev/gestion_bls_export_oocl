@@ -13,12 +13,12 @@ import StatusBadge from "@/components/StatusBadge";
 export default function Dashboard() {
   const { voyages: allVoyages, loading, error, refresh } = useVoyages();
   
-  // Filtre global : uniquement les voyages à partir du 01/04/2026
+  // Filtre global : uniquement les voyages à partir du 01/03/2026
   const voyages = React.useMemo(() => {
     return allVoyages.filter(v => {
       if (!v.etd) return false;
       // Comparaison de chaînes ISO ou Date
-      return new Date(v.etd) >= new Date("2026-04-01");
+      return new Date(v.etd) >= new Date("2026-03-01");
     });
   }, [allVoyages]);
 
