@@ -15,11 +15,14 @@ export default function Dashboard() {
   
   // Filtre global : uniquement les voyages à partir du 01/03/2026
   const voyages = React.useMemo(() => {
-    return allVoyages.filter(v => {
+    console.log("allVoyages count:", allVoyages?.length);
+    const filtered = (allVoyages || []).filter(v => {
       if (!v.etd) return false;
-      // Comparaison de chaînes ISO ou Date
-      return new Date(v.etd) >= new Date("2026-03-01");
+      // Loosened for debug: Jan 1st 2025
+      return new Date(v.etd) >= new Date("2025-01-01");
     });
+    console.log("filtered voyages count:", filtered.length);
+    return filtered;
   }, [allVoyages]);
 
   const [editingBL, setEditingBL] = useState<{bl: any, voyage: any} | null>(null);
@@ -162,6 +165,20 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Error reporting for debug */}
+      {error && (
+        <div className="bg-red-50 border-2 border-red-200 text-red-700 p-6 rounded-3xl flex items-center gap-4 shadow-xl shadow-red-500/10">
+          <AlertCircle className="w-8 h-8 flex-shrink-0" />
+          <div>
+            <h3 className="font-black uppercase tracking-widest text-xs mb-1">Erreur de chargement</h3>
+            <p className="text-sm font-medium">{error}</p>
+          </div>
+          <button onClick={refresh} className="ml-auto bg-red-100 hover:bg-red-200 p-2 rounded-xl transition-colors">
+            <RefreshCw className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+
       {/* Header section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
