@@ -47,8 +47,9 @@ export default function Dashboard() {
         }
         
         if (viewMode === "no-scanned" && !bl.isScanne) {
-          const etdStr = v.etd ? (typeof v.etd === "string" ? v.etd.substring(0, 10) : new Date(v.etd).toISOString().substring(0, 10)) : "";
-          if (etdStr > "2026-04-01") {
+          const limit = new Date("2026-04-01T00:00:00Z").getTime();
+          const etd = v.etd ? new Date(v.etd).getTime() : 0;
+          if (etd > limit) {
             all.push({ bl, voyage: v, daysSinceETD: days });
           }
         }
@@ -116,8 +117,9 @@ export default function Dashboard() {
       });
     }
     if (viewMode === "no-scanned") {
-      const etdStr = v.etd ? (typeof v.etd === "string" ? v.etd.substring(0, 10) : new Date(v.etd).toISOString().substring(0, 10)) : "";
-      return etdStr > "2026-04-01" && v.bls.some((bl: any) => !bl.isScanne);
+      const limit = new Date("2026-04-01T00:00:00Z").getTime();
+      const etd = v.etd ? new Date(v.etd).getTime() : 0;
+      return etd > limit && v.bls.some((bl: any) => !bl.isScanne);
     }
     if (viewMode === "unrated") {
       return v.bls.some((bl: any) => bl.statut?.toLowerCase() === "unrated");
@@ -144,8 +146,9 @@ export default function Dashboard() {
   const totalVoyages = voyages.length;
   const totalUnreleasedBLs = voyages.reduce((acc, v) => acc + v.bls.filter((bl: any) => !bl.dateRetrait).length, 0);
   const totalNoScannedBLs = voyages.reduce((acc, v) => {
-    const etdStr = v.etd ? (typeof v.etd === "string" ? v.etd.substring(0, 10) : new Date(v.etd).toISOString().substring(0, 10)) : "";
-    if (etdStr <= "2026-04-01") return acc;
+    const limit = new Date("2026-04-01T00:00:00Z").getTime();
+    const etd = v.etd ? new Date(v.etd).getTime() : 0;
+    if (etd <= limit) return acc;
     return acc + v.bls.filter((bl: any) => !bl.isScanne).length;
   }, 0);
   const totalUnratedBLs = voyages.reduce((acc, v) => acc + v.bls.filter((bl: any) => bl.statut?.toLowerCase() === "unrated").length, 0);
