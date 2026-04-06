@@ -50,18 +50,33 @@ export function calculateWorkingDays(etd: Date | string | null, dateRetrait: Dat
 /**
  * Formats a number or string with thousands separators (spaces).
  * Ex: "1000000" -> "1 000 000"
+ * Ex: "1000000XOF" -> "1 000 000 XOF"
  */
 export function formatAmount(val: string | number | null | undefined): string {
   if (val === null || val === undefined || val === "") return "";
-  // Remove any non-digit character first to avoid issues
-  const num = val.toString().replace(/\D/g, "");
-  if (!num) return "";
-  return num.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  
+  // Strip all spaces first to work with clean string
+  const s = val.toString().replace(/\s/g, "");
+  
+  // Match numeric part and currency part (letters)
+  const match = s.match(/^(\d+)?([a-zA-Z]+)?$/);
+  if (!match) return s; // Fallback to raw string if complex
+
+  const numPart = match[1] || "";
+  const currencyPart = match[2] || "";
+
+  // Format numeric part with spaces
+  const formattedNum = numPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+
+  if (!currencyPart) return formattedNum;
+  
+  // Combine with uppercase currency
+  return `${formattedNum} ${currencyPart.toUpperCase()}`.trim();
 }
 
 /**
- * Removes all non-digit characters from a string.
+ * Removes only space characters to preserve numbers and currency codes.
  */
 export function unformatAmount(val: string): string {
-  return val.replace(/\D/g, "");
+  return val.replace(/\s/g, "");
 }
