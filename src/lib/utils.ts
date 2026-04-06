@@ -46,3 +46,22 @@ export function calculateWorkingDays(etd: Date | string | null, dateRetrait: Dat
 
   return count;
 }
+
+/**
+ * Formats a number or string with thousands separators (spaces).
+ * Ex: "1000000" -> "1 000 000"
+ */
+export function formatAmount(val: string | number | null | undefined): string {
+  if (val === null || val === undefined || val === "") return "";
+  // Remove any non-digit character first to avoid issues
+  const num = val.toString().replace(/\D/g, "");
+  if (!num) return "";
+  return num.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
+
+/**
+ * Removes all non-digit characters from a string.
+ */
+export function unformatAmount(val: string): string {
+  return val.replace(/\D/g, "");
+}

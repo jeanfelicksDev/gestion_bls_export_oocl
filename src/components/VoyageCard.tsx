@@ -3,8 +3,10 @@
 import React, { useState } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Ship, Calendar, Clock, Edit2, CheckCircle2, Loader2, Trash2, Receipt, Plus, FileSpreadsheet, RotateCcw } from "lucide-react";
+import { Ship, Calendar, Clock, Edit2, CheckCircle2, Loader2, Receipt, Plus, FileSpreadsheet, RotateCcw, Archive, FolderArchive, FileText, CloudUpload } from "lucide-react";
+import JSZip from "jszip";
 import BillingModal from "./BillingModal";
+import StatusBadge from "./StatusBadge";
 import { calculateWorkingDays } from "@/lib/utils";
 
 interface BL {
@@ -14,9 +16,6 @@ interface BL {
   shipper: string;
   statut: string;
   typeConnaissement: string;
-  tender: string;
-  freighting: string;
-  valeurFret: string;
   dateRetrait: string | null;
   autresCharges?: {
     id: string;
@@ -27,6 +26,17 @@ interface BL {
   raisonRetour?: string | null;
   dateRetour?: string | null;
   numFactureRetour?: string | null;
+  numTimbre?: string | null;
+  commentaire?: string | null;
+  // Champs documents
+  urlORG?: string | null;
+  urlNNG?: string | null;
+  urlSWB?: string | null;
+  urlScanne?: string | null;
+  isORG?: boolean;
+  isNNG?: boolean;
+  isSWB?: boolean;
+  isScanne?: boolean;
 }
 
 interface Voyage {
@@ -59,6 +69,74 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
 
   const [isUpdating, setIsUpdating] = useState(false);
   const [showBilling, setShowBilling] = useState(false);
+  const [isZipping, setIsZipping] = useState(false);
+
+  const uploadedCount = voyage.bls.filter(bl => bl.urlORG || bl.urlSWB).length;
+
+  const handleDownloadAllBLs = async () => {
+    if (uploadedCount === 0) return;
+    setIsZipping(true);
+    try {
+      const zip = new JSZip();
+      
+      const downloadTasks = voyage.bls
+        .filter(bl => bl.urlORG || bl.urlSWB)
+        .flatMap(bl => {
+          const tasks = [];
+          if (bl.urlORG) tasks.push({ url: bl.urlORG, name: `${bl.booking}_ORG.pdf` });
+          if (bl.urlSWB) tasks.push({ url: bl.urlSWB, name: `${bl.booking}_SWB.pdf` });
+          return tasks;
+        });
+
+      await Promise.all(
+        downloadTasks.map(async (task) => {
+          try {
+            const res = await fetch(task.url);
+            const arrayBuffer = await res.arrayBuffer();
+            
+            const { PDFDocument } = await import("pdf-lib");
+            const pdfDoc = await PDFDocument.load(arrayBuffer);
+            const totalPages = pdfDoc.getPageCount();
+            
+            // Si c'est un multiple de 3 (cas standard OOCL), on ne garde que le premier tiers (1 exemplaire)
+            if (totalPages >= 3 && totalPages % 3 === 0) {
+              const pagesToKeep = totalPages / 3;
+              const newPdfDoc = await PDFDocument.create();
+              const indices = Array.from({ length: pagesToKeep }, (_, i) => i);
+              const copiedPages = await newPdfDoc.copyPages(pdfDoc, indices);
+              copiedPages.forEach(p => newPdfDoc.addPage(p));
+              const pdfBytes = await newPdfDoc.save();
+              zip.file(task.name, pdfBytes);
+            } else {
+              // Sinon on garde le fichier tel quel
+              zip.file(task.name, arrayBuffer);
+            }
+          } catch (err) {
+            console.error(`Erreur sur ${task.name}:`, err);
+            // En cas d'erreur, on essaie quand même d'ajouter le fichier original
+            try {
+              const res = await fetch(task.url);
+              const blob = await res.blob();
+              zip.file(task.name, blob);
+            } catch (e) {
+              console.error("Échec complet du téléchargement pour ce fichier", e);
+            }
+          }
+        })
+      );
+
+      const content = await zip.generateAsync({ type: "blob" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(content);
+      link.download = `BLs_${voyage.navire.nom.replace(/\s+/g, "_")}_${voyage.numero}.zip`;
+      link.click();
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors du téléchargement des BLs");
+    } finally {
+      setIsZipping(false);
+    }
+  };
 
   const confirmETD = async () => {
     setIsUpdating(true);
@@ -78,44 +156,12 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm(`ATTENTION : La suppression de ce voyage supprimera également TOUS les BLs rattachés. Voulez-vous continuer ?`)) return;
-    setIsUpdating(true);
-    try {
-      const res = await fetch(`/api/voyages/${voyage.id}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        onUpdate();
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleDeleteBL = async (blId: string, booking: string) => {
-    if (!confirm(`Voulez-vous vraiment supprimer le BL ${booking} ?`)) return;
-    setIsUpdating(true);
-    try {
-      const res = await fetch(`/api/bls/${blId}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        onUpdate();
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
 
   let displayedBLs = (searchTerm && !voyageMatches)
     ? voyage.bls.filter(bl => 
         bl.booking.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (bl.shipper || "").toLowerCase().includes(searchTerm.toLowerCase())
+        (bl.shipper || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (bl.numTimbre || "").toLowerCase().includes(searchTerm.toLowerCase())
       )
     : voyage.bls;
 
@@ -152,14 +198,6 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
               </p>
             </div>
           </div>
-          <button
-            onClick={() => setShowBilling(true)}
-            className="flex flex-col items-center justify-center p-3 bg-white/70 hover:bg-white text-gray-700 rounded-2xl border border-white/50 shadow-sm transition-all hover:shadow-md active:scale-95 group"
-            title="Tableau de facturation"
-          >
-            <FileSpreadsheet className="w-6 h-6 text-emerald-600 group-hover:scale-110 transition-transform" />
-            <span className="text-[8px] font-black uppercase mt-1 text-gray-400">Facture</span>
-          </button>
 
           <div className="flex items-center gap-4">
             <div className="flex gap-2 text-sm">
@@ -173,7 +211,20 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
               </div>
             </div>
             {voyage.etdConfirmed ? (
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleDownloadAllBLs}
+                  disabled={isZipping || uploadedCount === 0}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all font-bold text-sm shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    uploadedCount > 0 
+                      ? "bg-indigo-600 text-white shadow-indigo-600/20 hover:bg-indigo-700" 
+                      : "bg-gray-100 text-gray-400 border border-gray-200 shadow-none"
+                  }`}
+                  title="Télécharger tous les BLs (ZIP)"
+                >
+                  {isZipping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Archive className="w-4 h-4" />}
+                  <span className="font-mono">{uploadedCount}/{voyage.bls.length}</span>
+                </button>
                 <button
                   onClick={() => onEditBL(null as any, voyage)}
                   className="bg-primary text-white px-5 py-2.5 rounded-xl shadow-lg shadow-primary/20 transition-all font-bold text-sm flex items-center gap-2 hover:scale-[1.02] active:scale-95"
@@ -182,22 +233,41 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
                   Ajouter BL
                 </button>
                 <button
-                  onClick={handleDelete}
-                  disabled={isUpdating}
-                  className="bg-red-50 hover:bg-red-500 text-red-500 hover:text-white p-2.5 rounded-xl transition-all border border-red-100"
-                  title="Supprimer le voyage"
+                  onClick={() => setShowBilling(true)}
+                  className="bg-emerald-50 hover:bg-emerald-500 text-emerald-600 hover:text-white px-4 py-2.5 rounded-xl transition-all font-bold text-sm flex items-center gap-2 border border-emerald-100 shadow-sm shadow-emerald-500/10 active:scale-95 group"
                 >
-                  <Trash2 className="w-5 h-5" />
+                  <FileSpreadsheet className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  Tableau de facturation
                 </button>
               </div>
             ) : (
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleDownloadAllBLs}
+                  disabled={isZipping || uploadedCount === 0}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all font-bold text-sm shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    uploadedCount > 0 
+                      ? "bg-indigo-600 text-white shadow-indigo-600/20 hover:bg-indigo-700" 
+                      : "bg-gray-100 text-gray-400 border border-gray-200 shadow-none"
+                  }`}
+                  title="Télécharger tous les BLs (ZIP)"
+                >
+                  {isZipping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Archive className="w-4 h-4" />}
+                  <span className="font-mono">{uploadedCount}/{voyage.bls.length}</span>
+                </button>
                 <button
                   onClick={() => onEditBL(null as any, voyage)}
                   className="bg-primary text-white px-5 py-2.5 rounded-xl shadow-lg shadow-primary/20 transition-all font-bold text-sm flex items-center gap-2 hover:scale-[1.02] active:scale-95"
                 >
                   <Plus className="w-4 h-4" />
                   Ajouter BL
+                </button>
+                <button
+                  onClick={() => setShowBilling(true)}
+                   className="bg-emerald-50 hover:bg-emerald-500 text-emerald-600 hover:text-white px-4 py-2.5 rounded-xl transition-all font-bold text-sm flex items-center gap-2 border border-emerald-100 shadow-sm shadow-emerald-500/10 active:scale-95 group"
+                >
+                  <FileSpreadsheet className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  Tableau de facturation
                 </button>
                 <button
                   onClick={confirmETD}
@@ -210,14 +280,6 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
                     <CheckCircle2 className="w-4 h-4" />
                   )}
                   Confirmer ETD
-                </button>
-                <button
-                  onClick={handleDelete}
-                  disabled={isUpdating}
-                  className="bg-white/10 hover:bg-red-500 text-white p-2 rounded-xl backdrop-blur-md transition-all border border-white/20"
-                  title="Supprimer le voyage"
-                >
-                  <Trash2 className="w-5 h-5" />
                 </button>
               </div>
             )}
@@ -259,20 +321,24 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
                           </span>
                         )}
                       </div>
+                      {(bl.numTimbre || bl.commentaire) && (
+                        <div className="mt-1 flex flex-col gap-1">
+                          {bl.numTimbre && (
+                            <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
+                              Timbre: <span className="text-gray-600 font-bold">{bl.numTimbre}</span>
+                            </span>
+                          )}
+                          {bl.commentaire && (
+                            <span className="text-[10px] text-blue-600 font-medium italic bg-blue-50/50 px-1.5 py-0.5 rounded-md border border-blue-100/50 line-clamp-1 max-w-[200px]" title={bl.commentaire}>
+                              {bl.commentaire}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600 max-w-[200px] truncate">{bl.shipper}</td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        (() => {
-                          const s = bl.statut?.toUpperCase() || "";
-                          if (s === "OK IMPRESSION") return "bg-green-100 text-green-700";
-                          if (s.includes("ATTENTE DE OK IMPRESSION")) return "bg-blue-100 text-blue-700";
-                          if (s.includes("ATTENTE CORRECTION")) return "bg-orange-100 text-orange-700";
-                          return "bg-yellow-100 text-yellow-700";
-                        })()
-                      }`}>
-                        {bl.statut}
-                      </span>
+                      <StatusBadge status={bl.dateRetrait ? "RETIRE" : "EN ATTENTE RETRAIT"} />
                     </td>
                     <td className="px-6 py-4 text-sm font-medium">
                       {bl.dateRetrait ? (
@@ -292,20 +358,40 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
                       )}
                       {!voyage.etdConfirmed && <span className="text-gray-300 text-xs italic">ETD non confirmé</span>}
                     </td>
-                    <td className="px-6 py-4 text-right flex justify-end gap-1">
+                    <td className="px-6 py-4 text-right flex justify-end items-center gap-3">
+                      {/* Status Icons */}
+                      <div className="flex items-center gap-2 mr-2">
+                        {/* Docs Status (OBL/SWB) */}
+                        {(() => {
+                          const isOblComplete = bl.typeConnaissement === "OBL" && bl.urlORG && bl.urlNNG;
+                          const isSwbComplete = bl.typeConnaissement === "SWB" && bl.urlSWB;
+                          const hasDocs = isOblComplete || isSwbComplete;
+                          
+                          return (
+                            <div 
+                              className={`p-1.5 rounded-lg border ${hasDocs ? "bg-emerald-50 border-emerald-100 text-emerald-600" : "bg-gray-50 border-gray-100 text-gray-300"}`}
+                              title={hasDocs ? "Documents complets" : "Documents manquants"}
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                            </div>
+                          );
+                        })()}
+
+                        {/* Scanned Folder Status */}
+                        <div 
+                          className={`p-1.5 rounded-lg border ${bl.urlScanne ? "bg-blue-50 border-blue-100 text-blue-600" : "bg-gray-50 border-gray-100 text-gray-300"}`}
+                          title={bl.urlScanne ? "Dossier scanné présent" : "Dossier scanné manquant"}
+                        >
+                          <CloudUpload className="w-3.5 h-3.5" />
+                        </div>
+                      </div>
+
                       <button 
                         onClick={() => onEditBL(bl, voyage)}
                         className="p-2 text-gray-400 hover:text-primary transition-colors rounded-lg hover:bg-primary/5"
                         title="Modifier"
                       >
                         <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteBL(bl.id, bl.booking)}
-                        className="p-2 text-gray-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="w-4 h-4" />
                       </button>
                     </td>
                   </tr>

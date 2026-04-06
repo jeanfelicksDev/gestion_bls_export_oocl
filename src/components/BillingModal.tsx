@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { X, FileDown, Eye, EyeOff, DollarSign, Ship, Calendar, Loader2 } from "lucide-react";
+import { X, FileDown, Eye, EyeOff, DollarSign, Ship, Calendar, Loader2, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { formatAmount, unformatAmount } from "@/lib/utils";
 
 interface BillingModalProps {
   voyage: any;
@@ -20,6 +21,15 @@ const ROW_ALT = [249, 250, 252] as [number, number, number];      // Lignes alte
 export default function BillingModal({ voyage, onClose }: BillingModalProps) {
   const [tauxDollar, setTauxDollar] = useState("600 XOF");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showError, setShowError] = useState(false);
+
+  const hasUSD = useMemo(() => {
+    return voyage.bls.some((bl: any) => {
+      const isUSD = bl.deviseFret?.toString().toUpperCase() === "USD";
+      const hasAmount = parseFloat(bl.montantFret || "0") > 0;
+      return isUSD && hasAmount;
+    });
+  }, [voyage.bls]);
 
   const otherChargeTypes = useMemo(() => {
     const types = new Set<string>();
@@ -43,6 +53,12 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
   const activeColumns = ["Taxe de Port", ...otherChargeTypes].filter(c => visibleColumns[c]);
 
   const handleGeneratePDF = async () => {
+    // Nettoyage de la saisie pour voir s'il y a un chiffre
+    const rawVal = tauxDollar.replace(/[^0-9.]/g, "");
+    if (hasUSD && (!rawVal || parseFloat(rawVal) <= 0)) {
+      setShowError(true);
+      return;
+    }
     setIsGenerating(true);
     try {
       const { jsPDF } = await import("jspdf");
@@ -144,8 +160,8 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
       doc.setFont("courier", "bold");
       doc.setFontSize(13);
       const maxBookingContentWidth = Math.max(
-        doc.getTextWidth("BOOKING"),
-        ...voyage.bls.map((bl: any) => doc.getTextWidth(bl.booking || ""))
+        doc.getTextWidth("N°BLS"),
+        ...voyage.bls.map((bl: any) => doc.getTextWidth("OOLU" + (bl.booking || "")))
       );
 
       doc.setFont("helvetica", "normal");
@@ -220,7 +236,7 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
       //  DONNÉES DU TABLEAU
       // ════════════════════════════════════════════════════════
       const body: any[][] = voyage.bls.map((bl: any) => {
-        const row: any[] = [bl.booking || "", bl.shipper || "-"];
+        const row: any[] = ["OOLU" + (bl.booking || ""), bl.shipper || "-"];
         activeColumns.forEach(col => {
           if (col === "Taxe de Port") {
             row.push("X");
@@ -246,7 +262,7 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
         head: [
           // rang 1 : colonnes fixes + groupe CHARGES
           [
-            { content: "BOOKING", rowSpan: 2, styles: { valign: "middle", halign: "left", fontStyle: "bold", fontSize: 12 } },
+            { content: "N°BLS", rowSpan: 2, styles: { valign: "middle", halign: "left", fontStyle: "bold", fontSize: 12 } },
             { content: "SHIPPER", rowSpan: 2, styles: { valign: "middle", halign: "left", fontStyle: "bold", fontSize: 12 } },
             ...(activeColumns.length > 0
               ? [{
@@ -376,9 +392,9 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
               </label>
               <input
                 type="text"
-                className="px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary/20 outline-none font-bold text-red-600 bg-white w-32 text-sm"
-                value={tauxDollar}
-                onChange={(e) => setTauxDollar(e.target.value)}
+                className="px-6 py-3 rounded-2xl border-2 border-gray-100 focus:border-primary focus:ring-8 focus:ring-primary/5 outline-none font-black text-red-600 bg-white w-48 text-base shadow-sm transition-all"
+                value={formatAmount(tauxDollar)}
+                onChange={(e) => setTauxDollar(unformatAmount(e.target.value))}
                 placeholder="Ex: 600 XOF"
               />
             </div>
@@ -427,7 +443,7 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
             <thead>
               {activeColumns.length > 0 && (
                 <tr>
-                  <th className="border border-blue-200/60 px-4 py-2.5 text-left text-[10px] font-black text-[#002F6C] uppercase bg-[#EBF1FB]" rowSpan={2}>Booking</th>
+                  <th className="border border-blue-200/60 px-4 py-2.5 text-left text-[10px] font-black text-[#002F6C] uppercase bg-[#EBF1FB]" rowSpan={2}>N°BLS</th>
                   <th className="border border-blue-200/60 px-4 py-2.5 text-left text-[10px] font-black text-[#002F6C] uppercase bg-[#EBF1FB]" rowSpan={2}>Shipper</th>
                   <th className="border border-blue-200/60 px-2 py-2 text-center text-[10px] font-black text-[#002F6C] uppercase bg-[#DAE6F8]" colSpan={activeColumns.length}>
                     Charges
@@ -437,7 +453,7 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
               <tr className="bg-[#EBF1FB]">
                 {activeColumns.length === 0 && (
                   <>
-                    <th className="border border-blue-200/60 px-4 py-2.5 text-[10px] font-black text-[#002F6C] uppercase text-left">Booking</th>
+                    <th className="border border-blue-200/60 px-4 py-2.5 text-[10px] font-black text-[#002F6C] uppercase text-left">N°BLS</th>
                     <th className="border border-blue-200/60 px-4 py-2.5 text-[10px] font-black text-[#002F6C] uppercase text-left">Shipper</th>
                   </>
                 )}
@@ -451,14 +467,14 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
             <tbody>
               {voyage.bls.map((bl: any, i: number) => (
                 <tr key={bl.id} className={i % 2 === 0 ? "bg-white" : "bg-[#F9FAFC]"}>
-                  <td className="border border-blue-100 px-4 py-3 font-mono font-bold text-gray-800 text-sm whitespace-nowrap">{bl.booking}</td>
+                  <td className="border border-blue-100 px-4 py-3 font-mono font-bold text-gray-800 text-sm whitespace-nowrap">OOLU{bl.booking}</td>
                   <td className="border border-blue-100 px-4 py-3 text-gray-600 text-sm truncate max-w-xs">{bl.shipper || "-"}</td>
                   {activeColumns.map(col => {
                     let val = "";
-                    if (col === "Taxe de Port") val = "X"; // Changed from "✓" to "X"
+                    if (col === "Taxe de Port") val = "X";
                     else {
                       const charge = bl.autresCharges?.find((c: any) => c.type === col);
-                      val = charge?.montant || "";
+                      val = formatAmount(charge?.montant) || "";
                     }
                     return (
                       <td key={col} className="border border-blue-100 px-2 py-3 text-center font-bold text-blue-700 text-sm whitespace-nowrap">
@@ -472,6 +488,33 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
           </table>
         </div>
       </div>
+
+      {/* Modal d'erreur Taux Dollar */}
+      {showError && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-red-50 animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center gap-6">
+              <div className="bg-red-50 p-5 rounded-full ring-8 ring-red-50/50">
+                <AlertCircle className="w-12 h-12 text-red-500" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-gray-900 mb-2 font-mono">TAUX DOLLAR REQUIS</h3>
+                <p className="text-gray-500 text-sm font-bold leading-relaxed">
+                  Certains BLs de ce voyage ont un fret exprimé en <span className="text-red-500 font-black">USD</span>.<br/> 
+                  Le champ <span className="text-primary font-black uppercase">"Taux du Dollar"</span> doit obligatoirement être renseigné pour convertir ces montants dans le PDF.
+                </p>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setShowError(false)}
+                className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-800 transition-all active:scale-95 shadow-xl shadow-slate-200"
+              >
+                Compris, je vais le renseigner
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

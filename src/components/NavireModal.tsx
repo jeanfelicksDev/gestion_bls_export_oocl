@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Save, Ship, Plus, Check, Edit2, Trash2 } from "lucide-react";
+import { X, Save, Ship, Plus, Check, Edit2, Trash2, Anchor } from "lucide-react";
 
 interface Coque {
   id: string;
@@ -96,6 +96,7 @@ export default function NavireModal({ onClose, onSuccess }: NavireModalProps) {
     try {
       const res = await fetch(`/api/coques/${id}`, { method: "DELETE" });
       if (res.ok) {
+        setCoqueId("");
         fetchCoques();
       } else {
         const data = await res.json();
@@ -145,198 +146,193 @@ export default function NavireModal({ onClose, onSuccess }: NavireModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="bg-primary p-6 text-white flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <Ship className="w-6 h-6" />
-            <h2 className="text-xl font-bold">{editingId ? "Modifier le Navire" : "Créer un Navire"}</h2>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-md">
+      <div className="bg-white rounded-[2rem] w-full max-w-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+        {/* Header */}
+        <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-20">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shadow-inner">
+              <Ship className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
+                {editingId ? "Modifier le Navire" : "Créer un Navire"}
+              </h2>
+              <p className="text-sm font-medium text-slate-400">
+                Gérez votre flotte et assignez des coques
+              </p>
+            </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+          <button onClick={onClose} className="p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
             <X className="w-6 h-6" />
           </button>
         </div>
         
-        <div className="p-8 space-y-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Nom du Navire</label>
-                <input 
-                  autoFocus
-                  className={`w-full px-4 py-3 rounded-xl border border-gray-500 ${nom ? "bg-green-50" : "bg-white"} focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-lg font-medium`}
-                  placeholder="Ex: ONE PRESENCE"
-                  value={nom}
-                  onChange={(e) => setNom(e.target.value.toUpperCase())}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Coque</label>
-                {!showAddCoque ? (
-                  <div className="flex gap-2">
-                    <select 
-                      className={`flex-1 px-4 py-3 rounded-xl border border-gray-500 ${coqueId ? "bg-green-50" : "bg-white"} focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium`}
-                      value={coqueId}
-                      onChange={(e) => setCoqueId(e.target.value)}
-                    >
-                      <option value="">Sélectionner une coque</option>
-                      {coques.map(c => (
-                        <option key={c.id} value={c.id}>{c.nom}</option>
-                      ))}
-                    </select>
-                    <button 
-                      type="button"
-                      onClick={() => setShowAddCoque(true)}
-                      className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors"
-                      title="Ajouter une nouvelle coque"
-                    >
-                      <Plus className="w-6 h-6" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2 animate-in slide-in-from-right-2 duration-200">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-50/50">
+          <div className="max-w-xl mx-auto space-y-10">
+            {/* FORM CARD */}
+            <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-[2rem] shadow-sm border border-slate-200/60 space-y-6 relative overflow-hidden">
+               {/* Decorative Element */}
+               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -z-10 opacity-50" />
+               
+               <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Nom du Navire</label>
                     <input 
                       autoFocus
-                      className="flex-1 px-4 py-3 rounded-xl border border-blue-200 bg-blue-50 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
-                      placeholder="Nouveau nom..."
-                      value={newCoque}
-                      onChange={(e) => setNewCoque(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCoque())}
+                      className="w-full px-5 py-4 rounded-2xl border-2 border-slate-200 bg-slate-50/50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-semibold text-slate-800 placeholder:font-normal placeholder:text-slate-400"
+                      placeholder="Ex: ONE PRESENCE"
+                      value={nom}
+                      onChange={(e) => setNom(e.target.value.toUpperCase())}
+                      required
                     />
-                    <button 
-                      type="button"
-                      onClick={handleAddCoque}
-                      className="p-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors"
-                    >
-                      <Check className="w-6 h-6" />
-                    </button>
-                    <button 
-                      type="button"
-                      onClick={() => setShowAddCoque(false)}
-                      className="p-3 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors"
-                    >
-                      <X className="w-6 h-6" />
-                    </button>
                   </div>
-                )}
-              </div>
-            </div>
 
-            {/* Coque Management Section */}
-            <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Gestion des Coques</h3>
-                <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{coques.length}</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {coques.map(c => (
-                  <div key={c.id} className="group flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 shadow-sm hover:border-primary transition-all">
-                    {c.nom}
-                    <button 
-                      type="button"
-                      onClick={() => handleDeleteCoque(c.id, c.nom)}
-                      className="text-gray-300 hover:text-red-500 transition-colors"
-                      title="Supprimer cette coque"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+                  <div>
+                    <label className="flex items-center justify-between text-sm font-bold text-slate-700 mb-2">
+                      <span>Coque Assignée</span>
+                      {coqueId && !showAddCoque && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCoque(coqueId, coques.find(c => c.id === coqueId)?.nom || "")}
+                          className="text-xs text-red-500 hover:text-red-700 font-bold flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Supprimer la coque {coques.find(c => c.id === coqueId)?.nom}
+                        </button>
+                      )}
+                    </label>
+                    {!showAddCoque ? (
+                      <div className="flex gap-3">
+                        <select 
+                          className="flex-1 px-5 py-4 rounded-2xl border-2 border-slate-200 bg-slate-50/50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-semibold text-slate-700 appearance-none"
+                          value={coqueId}
+                          onChange={(e) => setCoqueId(e.target.value)}
+                        >
+                          <option value="">Sélectionner une coque</option>
+                          {coques.map(c => (
+                            <option key={c.id} value={c.id}>{c.nom}</option>
+                          ))}
+                        </select>
+                        <button 
+                          type="button"
+                          onClick={() => setShowAddCoque(true)}
+                          className="px-6 bg-white border-2 border-slate-200 text-slate-600 rounded-2xl hover:border-blue-500 hover:text-blue-600 focus:ring-4 focus:ring-blue-500/10 transition-all flex items-center justify-center font-bold gap-2"
+                        >
+                          <Plus className="w-5 h-5 bg-slate-100 rounded-full p-0.5" /> 
+                          <span className="hidden sm:inline">Créer</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-3 animate-in fade-in slide-in-from-right-4 duration-300">
+                        <input 
+                          autoFocus
+                          className="flex-1 px-5 py-4 rounded-2xl border-2 border-blue-400 bg-blue-50/30 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all font-semibold text-blue-900 placeholder:font-normal placeholder:text-blue-300"
+                          placeholder="Nom de la nouvelle coque"
+                          value={newCoque}
+                          onChange={(e) => setNewCoque(e.target.value.toUpperCase())}
+                          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCoque())}
+                        />
+                        <button 
+                          type="button"
+                          onClick={handleAddCoque}
+                          disabled={!newCoque.trim()}
+                          className="px-5 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-blue-600/20"
+                        >
+                          <Check className="w-6 h-6" />
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => setShowAddCoque(false)}
+                          className="px-5 bg-white border-2 border-slate-200 text-slate-500 rounded-2xl hover:bg-slate-50 transition-colors"
+                        >
+                          <X className="w-6 h-6" />
+                        </button>
+                      </div>
+                    )}
                   </div>
-                ))}
+               </div>
+
+               <div className="pt-4 flex gap-3">
+                 <button 
+                    type="submit" 
+                    disabled={isSaving || !nom}
+                    className={`flex-1 py-4 rounded-2xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 text-lg ${
+                      editingId ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/25" : "bg-blue-600 hover:bg-blue-700 shadow-blue-600/25"
+                    } disabled:opacity-50 disabled:shadow-none hover:-translate-y-0.5 active:translate-y-0`}
+                  >
+                    {isSaving ? (
+                      <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      editingId ? <Edit2 className="w-5 h-5" /> : <Check className="w-6 h-6" />
+                    )}
+                    {editingId ? "Mettre à jour" : "Confirmer la création"}
+                  </button>
+                  {editingId && (
+                    <button 
+                      type="button" 
+                      onClick={() => { setEditingId(null); setNom(""); setCoqueId(""); }}
+                      className="px-6 py-4 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all"
+                    >
+                      Annuler
+                    </button>
+                  )}
+               </div>
+            </form>
+
+            {/* LIST OF SHIPS CARD */}
+            <div>
+              <div className="flex items-center justify-between mb-4 px-2">
+                <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                  Flotte Enregistrée
+                  <span className="bg-blue-50 text-blue-600 border border-blue-100 text-xs py-0.5 px-2.5 rounded-full font-black">
+                    {navires.length}
+                  </span>
+                </h3>
               </div>
-            </div>
 
-
-            <div className="flex gap-4 pt-2">
-              <button 
-                type="button" 
-                onClick={onClose}
-                className="px-6 py-3 rounded-xl border border-gray-200 font-bold text-gray-400 hover:bg-gray-50 transition-all"
-              >
-                Annuler
-              </button>
-              <button 
-                type="submit" 
-                disabled={isSaving || !nom}
-                className={`flex-1 px-6 py-3 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${
-                  editingId ? "bg-amber-500 hover:shadow-amber-500/30" : "bg-primary hover:shadow-primary/30"
-                } disabled:opacity-50 disabled:shadow-none`}
-              >
-                <Save className="w-5 h-5" />
-                {isSaving ? (editingId ? "Mise à jour..." : "Création...") : (editingId ? "Enregistrer les modifications" : "Créer le Navire")}
-              </button>
-              {editingId && (
-                <button 
-                  type="button" 
-                  onClick={() => { setEditingId(null); setNom(""); setCoqueId(""); }}
-                  className="px-6 py-3 rounded-xl border border-amber-200 text-amber-600 font-bold hover:bg-amber-50 transition-all"
-                >
-                  Annuler Modification
-                </button>
-              )}
-            </div>
-          </form>
-
-          {/* Navire List Table */}
-          <div className="space-y-4">
-            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2 flex justify-between">
-              Navires Enregistrés 
-              <span className="text-primary">{navires.length}</span>
-            </h3>
-            <div className="max-h-60 overflow-y-auto rounded-2xl border border-gray-500 shadow-inner bg-white">
-              <table className="w-full text-left border-collapse">
-                <thead className="sticky top-0 bg-gray-100 shadow-sm z-10">
-                  <tr className="text-[10px] font-bold text-gray-600 uppercase tracking-wider border-b border-gray-500">
-                    <th className="px-6 py-3">Nom du Navire</th>
-                    <th className="px-6 py-3">Coque</th>
-                    <th className="px-6 py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-500">
-                  {navires.map((v) => (
-                    <tr key={v.id} className={`group hover:bg-white transition-colors ${editingId === v.id ? "bg-amber-50" : ""}`}>
-                      <td className="px-6 py-4">
-                        <div className="font-bold text-gray-700">{v.nom}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {v.coque ? (
-                          <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-tighter border border-blue-100">
-                            {v.coque.nom}
-                          </span>
-                        ) : (
-                          <span className="text-gray-300 italic text-xs">Néant</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 overflow-hidden text-sm">
+                {navires.length === 0 ? (
+                  <div className="p-12 text-center text-slate-400 flex flex-col items-center">
+                    <Anchor className="w-12 h-12 mb-3 text-slate-200" />
+                    <p className="font-medium">Aucun navire n'a encore été créé.</p>
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
+                    {navires.map((v) => (
+                      <li key={v.id} className={`flex items-center justify-between p-4 px-6 hover:bg-slate-50 transition-colors group ${editingId === v.id ? 'bg-amber-50/50' : ''}`}>
+                        <div className="flex-1">
+                          <p className="font-bold text-slate-800 text-base">{v.nom}</p>
+                          {v.coque ? (
+                            <p className="text-xs font-semibold text-blue-600 mt-1 flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Coque assignée : {v.coque.nom}
+                            </p>
+                          ) : (
+                            <p className="text-xs font-medium text-slate-400 mt-1 flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span> Sans coque
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button 
                             onClick={() => handleEditMode(v)}
-                            className="p-2 text-amber-500 hover:bg-amber-50 rounded-xl transition-all"
+                            className="p-2 w-10 h-10 flex items-center justify-center text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-xl transition-colors"
                             title="Modifier"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button 
                             onClick={() => handleDelete(v.id, v.nom)}
-                            className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                            className="p-2 w-10 h-10 flex items-center justify-center text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors"
                             title="Supprimer"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {navires.length === 0 && (
-                    <tr>
-                      <td colSpan={3} className="px-6 py-12 text-center text-gray-400 italic">
-                        Aucun navire dans la base de données.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </div>
         </div>

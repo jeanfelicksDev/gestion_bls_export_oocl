@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { X, Save, Calendar, Tag, FileText, Hash, MessageSquare, Plus, Trash2, CheckCircle2, RotateCcw } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { X, Save, Calendar, Tag, FileText, Hash, MessageSquare, Plus, Trash2, CheckCircle2, RotateCcw, AlertCircle, ShipWheel, Eye, CloudUpload, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import StatusBadge from "./StatusBadge";
+import { formatAmount, unformatAmount } from "@/lib/utils";
 
 interface AutreCharge {
   id?: string;
@@ -33,10 +35,13 @@ const STATUT_CORRECTION_OPTIONS = ["", "OK_Print", "Attente_Correction", "Attent
 
 export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModalProps) {
   const isNew = !bl?.id;
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeUploadType, setActiveUploadType] = useState<"ORG" | "NNG" | "SWB" | "SCANNE" | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   
   const [formData, setFormData] = useState({
     booking: bl?.booking || "",
-    statut: bl?.statut || "",
+    statut: bl?.statut || (bl?.dateRetrait ? "RETIRE" : "EN ATTENTE RETRAIT"),
     dateRetrait: bl?.dateRetrait ? format(new Date(bl.dateRetrait), "yyyy-MM-dd") : "",
     pod: bl?.pod || "",
     shipper: bl?.shipper || "",
@@ -48,6 +53,14 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
     numTimbre: bl?.numTimbre || "",
     statutCorrection: bl?.statutCorrection || "",
     commentaire: bl?.commentaire || "",
+    isORG: bl?.isORG || false,
+    isNNG: bl?.isNNG || false,
+    isSWB: bl?.isSWB || false,
+    isScanne: bl?.isScanne || false,
+    urlORG: bl?.urlORG || "",
+    urlNNG: bl?.urlNNG || "",
+    urlSWB: bl?.urlSWB || "",
+    urlScanne: bl?.urlScanne || "",
     montantFret: bl?.montantFret?.toString() || "",
     deviseFret: bl?.deviseFret || "EUR",
     raisonRetour: bl?.raisonRetour || "",
@@ -60,16 +73,12 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
   );
 
   const [typeCharges, setTypeCharges] = useState<TypeCharge[]>([]);
-  const [newTypeCharge, setNewTypeCharge] = useState("");
-  const [showAddType, setShowAddType] = useState(false);
+  const [raisonRetourOptions, setRaisonRetourOptions] = useState<RaisonRetourOption[]>([]);
   const [showReturnForm, setShowReturnForm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-
-  const [raisonRetourOptions, setRaisonRetourOptions] = useState<RaisonRetourOption[]>([]);
-  const [newRaisonRetour, setNewRaisonRetour] = useState("");
-  const [showAddRaison, setShowAddRaison] = useState(false);
-  const [editingRaisonId, setEditingRaisonId] = useState<string | null>(null);
-  const [editingRaisonNom, setEditingRaisonNom] = useState("");
+  const [showTypeManager, setShowTypeManager] = useState(false);
+  const [newTypeName, setNewTypeName] = useState("");
+  const [isCreatingType, setIsCreatingType] = useState(false);
 
   useEffect(() => {
     fetchTypeCharges();
@@ -79,118 +88,106 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
   const fetchTypeCharges = async () => {
     try {
       const res = await fetch("/api/type-charges");
-      if (res.ok) {
-        const data = await res.json();
-        setTypeCharges(data);
-      }
-    } catch (err) {
-      console.error(err);
-    }
+      if (res.ok) setTypeCharges(await res.json());
+    } catch (err) { console.error(err); }
   };
 
   const fetchRaisonRetourOptions = async () => {
     try {
       const res = await fetch("/api/raison-retour");
-      if (res.ok) {
-        const data = await res.json();
-        setRaisonRetourOptions(data);
-      }
-    } catch (err) {
-      console.error(err);
-    }
+      if (res.ok) setRaisonRetourOptions(await res.json());
+    } catch (err) { console.error(err); }
   };
 
-  const handleAddTypeCharge = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!newTypeCharge.trim()) return;
+  const handleCreateTypeCharge = async () => {
+    if (!newTypeName.trim()) return;
+    setIsCreatingType(true);
     try {
       const res = await fetch("/api/type-charges", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nom: newTypeCharge.trim() }),
+        body: JSON.stringify({ nom: newTypeName }),
       });
       if (res.ok) {
-        setNewTypeCharge("");
-        setShowAddType(false);
-        fetchTypeCharges();
+        await fetchTypeCharges();
+        setNewTypeName("");
+        setShowTypeManager(false);
+      } else {
+        alert("Erreur lors de la création du type");
       }
     } catch (err) {
       console.error(err);
+      alert("Erreur réseau");
+    } finally {
+      setIsCreatingType(false);
     }
   };
 
-  const handleAddRaisonRetour = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!newRaisonRetour.trim()) return;
+  const handleToggleAndOpen = (type: "ORG" | "NNG" | "SWB" | "SCANNE") => {
+    // 1. Toggle State
+    const field = type === "SCANNE" ? "isScanne" : `is${type}` as keyof typeof formData;
+    setFormData(prev => ({ ...prev, [field]: !prev[field] }));
+
+    // 2. Open PDF (Cloud URL prioritized)
+    const storedUrl = formData[type === "SCANNE" ? "urlScanne" : `url${type}` as keyof typeof formData];
+    if (storedUrl) {
+      window.open(storedUrl, '_blank', 'noopener,noreferrer');
+    } else if (formData.booking) {
+      // Fallback to convention while migrating
+      const fileName = `${formData.booking} ${type}.pdf`;
+      const url = `/bl-files/${encodeURIComponent(fileName)}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleUploadClick = (type: "ORG" | "NNG" | "SWB" | "SCANNE") => {
+    setActiveUploadType(type);
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeUploadType || !bl?.id) return;
+
+    setIsUploading(true);
     try {
-      const res = await fetch("/api/raison-retour", {
+      const filename = `${formData.booking} ${activeUploadType}.pdf`;
+      const res = await fetch(`/api/bls/upload?filename=${encodeURIComponent(filename)}&blId=${bl.id}&type=${activeUploadType}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nom: newRaisonRetour.trim() }),
+        body: file,
       });
-      if (res.ok) {
-        setNewRaisonRetour("");
-        setShowAddRaison(false);
-        fetchRaisonRetourOptions();
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
-  const handleEditRaisonRetour = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!editingRaisonId || !editingRaisonNom.trim()) return;
-    try {
-      const res = await fetch(`/api/raison-retour/${editingRaisonId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nom: editingRaisonNom.trim() }),
-      });
-      if (res.ok) {
-        if (formData.raisonRetour === editingRaisonNom) {
-          setFormData({ ...formData, raisonRetour: editingRaisonNom.trim() });
-        }
-        setEditingRaisonId(null);
-        setEditingRaisonNom("");
-        fetchRaisonRetourOptions();
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
+      const result = await res.json();
 
-  const handleDeleteRaisonRetour = async (id: string, nom: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm("Supprimer cette raison de la liste ?")) return;
-    try {
-      const res = await fetch(`/api/raison-retour/${id}`, { method: "DELETE" });
       if (res.ok) {
-        if (formData.raisonRetour === nom) {
-          setFormData({ ...formData, raisonRetour: "" });
-        }
-        fetchRaisonRetourOptions();
+        setFormData(prev => ({ 
+          ...prev, 
+          [activeUploadType === "SCANNE" ? "urlScanne" : `url${activeUploadType}`]: result.url,
+          [activeUploadType === "SCANNE" ? "isScanne" : `is${activeUploadType}`]: true 
+        }));
+        alert(`Document ${activeUploadType} téléversé avec succès !`);
+      } else {
+        alert(`Erreur Upload : ${result.error || "Inconnue"}`);
       }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleDeleteType = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm("Supprimer ce type de charge de la liste ?")) return;
-    try {
-      const res = await fetch(`/api/type-charges/${id}`, { method: "DELETE" });
-      if (res.ok) fetchTypeCharges();
-    } catch (err) {
-      console.error(err);
+    } finally {
+      setIsUploading(false);
+      setActiveUploadType(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
   const isDateRetraitSaisie = !!formData.dateRetrait;
 
-  const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-    setFormData({ ...formData, [field]: e.target.value });
+  const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setFormData((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === "dateRetrait") {
+        next.statut = value ? "RETIRE" : "EN ATTENTE RETRAIT";
+      }
+      return next;
+    });
+  };
 
   const addCharge = () => {
     setAutresCharges([...autresCharges, { type: "", montant: "0", observation: "" }]);
@@ -202,14 +199,94 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
 
   const updateCharge = (index: number, field: keyof AutreCharge, value: string) => {
     const updated = [...autresCharges];
-    updated[index] = { ...updated[index], [field]: value };
+    const finalValue = field === "montant" ? unformatAmount(value) : value;
+    updated[index] = { ...updated[index], [field]: finalValue };
     setAutresCharges(updated);
+  };
+
+  const generateReceiptPDF = async (booking: string, typeConnaissement: string) => {
+    try {
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 20;
+      let y = 90; // Laisser 80-90mm pour la pièce d'identité en haut
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(12);
+
+      const text1 = "Je soussigné dont pièce d'identité ci-dessus,";
+      const text2 = "reconnais avoir retiré dans les locaux de OOCL/Direction des Solutions Maritimes (DSM),";
+      
+      let details = "";
+      if (typeConnaissement === "OBL") {
+        details = "un OBL (03 copies originales + 02 copies non négociables)";
+      } else if (typeConnaissement === "SWB") {
+        details = "un SWB (01 copie SWB)";
+      } else {
+        details = `un « ${typeConnaissement || "type de connaissement"} »`;
+      }
+
+      doc.text(text1, margin, y);
+      y += 10;
+      doc.text(text2, margin, y);
+      y += 10;
+      doc.setFont("helvetica", "bold");
+      doc.text(details, margin, y);
+      
+      // Bloc signature et date à droite
+      y += 40;
+      doc.setFont("helvetica", "bold");
+      doc.text("Signature + cachet + mention « lu et approuvé »", pageWidth - margin - 85, y);
+      
+      y += 30;
+      doc.setFont("helvetica", "normal");
+      const today = format(new Date(), "dd/MM/yyyy");
+      doc.text(`Abidjan, le ${today}`, pageWidth - margin - 45, y);
+
+      // Ouvrir dans un nouvel onglet
+      const blobUrl = doc.output("bloburl");
+      window.open(blobUrl, "_blank");
+    } catch (err) {
+      console.error("Erreur PDF:", err);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     try {
+      // Validation : Date de retrait >= ETD
+      if (formData.dateRetrait && voyage.etd) {
+        const dRetrait = new Date(formData.dateRetrait);
+        const dEtd = new Date(voyage.etd);
+        
+        // Reset hours for comparison
+        dRetrait.setHours(0, 0, 0, 0);
+        dEtd.setHours(0, 0, 0, 0);
+
+        if (dRetrait < dEtd) {
+          alert(`Erreur : La date de retrait (${format(dRetrait, "dd/MM/yyyy")}) ne peut pas être antérieure à la date de départ prévue (${format(dEtd, "dd/MM/yyyy")}).`);
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      // Validation : Documents obligatoires selon le type
+      if (formData.typeConnaissement === "OBL") {
+        if (!formData.urlORG || !formData.urlNNG) {
+          alert("Erreur : Pour un OBL (Original), vous devez impérativement téléverser les fichiers ORG et NNG.");
+          setIsSaving(false);
+          return;
+        }
+      } else if (formData.typeConnaissement === "SWB") {
+        if (!formData.urlSWB) {
+          alert("Erreur : Pour un SWB (Seaway Bill), vous devez impérativement téléverser le fichier SWB.");
+          setIsSaving(false);
+          return;
+        }
+      }
+
       const url = isNew ? "/api/bls" : `/api/bls/${bl.id}`;
       const method = isNew ? "POST" : "PATCH";
       
@@ -223,388 +300,320 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
         }),
       });
       if (res.ok) {
+        // Déclencher le PDF si date de retrait saisie
+        if (formData.dateRetrait) {
+          await generateReceiptPDF(formData.booking, formData.typeConnaissement);
+        }
         onSave();
         onClose();
       } else {
         const errorData = await res.json();
-        const msg = errorData.error || "Impossible d'enregistrer le BL";
-        const details = errorData.details ? JSON.stringify(errorData.details) : "";
-        alert(`Erreur d'enregistrement :\n\n${msg}\n\n${details}`);
+        alert(`Erreur d'enregistrement :\n\n${errorData.error || "Impossible d'enregistrer le BL"}`);
       }
     } catch (err) {
       console.error(err);
-      alert("Une erreur réseau est survenue lors de l'enregistrement.");
+      alert("Une erreur réseau est survenue.");
     } finally {
       setIsSaving(false);
     }
   };
 
-  const inputCls = (val: any) => `w-full px-4 py-2.5 rounded-xl border border-gray-500 ${val ? "bg-green-50" : "bg-white"} focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm font-medium`;
-  const labelCls = "text-[10px] font-bold text-gray-600 uppercase tracking-wider flex items-center gap-1.5";
+  const inputCls = (val: any) => `w-full px-4 py-2 rounded-xl border-2 border-slate-300 ${val ? "bg-slate-50" : "bg-white"} focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all text-sm font-semibold text-slate-700 placeholder:text-slate-300 shadow-sm`;
+  const labelCls = "text-[10px] font-black text-slate-600 uppercase tracking-widest flex items-center gap-2 mb-1.5";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[95vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
+      <div className="bg-white rounded-[2.5rem] w-full max-w-5xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[92vh] flex flex-col border border-white/20">
         
+        {/* Hidden File Input */}
+        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf" className="hidden" />
+
         {/* Header */}
-        <div className="bg-primary p-6 text-white flex justify-between items-center flex-shrink-0">
-          <div>
-            <h2 className="text-xl font-bold">{isNew ? "Ajouter un BL" : `Modifier BL ${bl.booking}`}</h2>
-            <p className="text-blue-100 text-sm">{voyage.navire?.nom || "N/A"} — {voyage.numero}</p>
+        <div className="bg-gradient-to-r from-primary to-blue-700 p-8 text-white flex justify-between items-center flex-shrink-0 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-1">
+              <h2 className="text-2xl font-black tracking-tight">{isNew ? "Ajouter un BL" : `Edition BL ${bl.booking}`}</h2>
+            </div>
+            <p className="text-blue-100/80 text-sm font-bold flex items-center gap-2">
+              <ShipWheel className="w-4 h-4" />
+              {voyage.navire?.nom || "N/A"} — Voyage {voyage.numero}
+              {voyage.etd && (
+                <> — ETD: {format(new Date(voyage.etd), "dd/MM/yy")}</>
+              )}
+            </p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+          <button onClick={onClose} className="p-3 hover:bg-white/10 rounded-full transition-all active:scale-95 relative z-10 border border-white/10">
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-8 space-y-6">
+        {/* Scrollable Form */}
+        <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-8 space-y-8 bg-slate-50/30">
           
-          <div className="grid grid-cols-2 gap-5">
-            <div className="col-span-2">
-              <div className="text-[10px] font-bold text-blue-900 uppercase tracking-widest mb-3 flex items-center gap-2">
-                <span className="flex-1 h-px bg-blue-200"></span> Informations BL <span className="flex-1 h-px bg-blue-200"></span>
+          <div className="grid grid-cols-12 gap-8">
+            {/* Left Column */}
+            <div className="col-span-12 lg:col-span-7 space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-1.5 bg-primary rounded-full" />
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Informations Principal</h3>
               </div>
-            </div>
 
-            <div className={`space-y-1.5 ${isNew ? "col-span-2" : "hidden"}`}>
-              <label className={labelCls}><Hash className="w-3 h-3" /> N° Booking</label>
-              <input 
-                className={`${inputCls(formData.booking)} font-mono font-bold text-lg`} 
-                required={isNew} 
-                value={formData.booking} 
-                onChange={set("booking")} 
-                placeholder="Ex: 4055010790"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className={labelCls}><Tag className="w-3 h-3" /> Statut</label>
-              <input className={inputCls(formData.statut)} required={isDateRetraitSaisie} value={formData.statut} onChange={set("statut")} />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className={labelCls}><Calendar className="w-3 h-3" /> Date de Retrait</label>
-              <input type="date" className={inputCls(formData.dateRetrait)} value={formData.dateRetrait} onChange={set("dateRetrait")} />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className={labelCls}>POD</label>
-              <input className={inputCls(formData.pod)} required={isDateRetraitSaisie} value={formData.pod} onChange={set("pod")} />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className={labelCls}>Type Connaissement</label>
-              <select className={inputCls(formData.typeConnaissement)} required={isDateRetraitSaisie} value={formData.typeConnaissement} onChange={set("typeConnaissement")}>
-                <option value="">—</option>
-                <option value="OBL">OBL</option>
-                <option value="SWB">SWB</option>
-              </select>
-            </div>
-
-            <div className="col-span-2 space-y-1.5">
-              <label className={labelCls}>Shipper</label>
-              <input className={inputCls(formData.shipper)} required={isDateRetraitSaisie} value={formData.shipper} onChange={set("shipper")} />
-            </div>
-
-            <div className="col-span-2 pt-2">
-              <div className="text-[10px] font-bold text-blue-900 uppercase tracking-widest mb-3 flex items-center gap-2">
-                <span className="flex-1 h-px bg-blue-200"></span> Fret &amp; Statuts <span className="flex-1 h-px bg-blue-200"></span>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className={labelCls}><FileText className="w-3 h-3" /> Statut Fret</label>
-              <select className={inputCls(formData.statutFret)} required={isDateRetraitSaisie} value={formData.statutFret} onChange={set("statutFret")}>
-                {STATUT_FRET_OPTIONS.map(o => <option key={o} value={o}>{o || "—"}</option>)}
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className={labelCls}><Hash className="w-3 h-3" /> N° Timbre</label>
-              <input className={inputCls(formData.numTimbre)} required={isDateRetraitSaisie} placeholder="Ex: T-123456" value={formData.numTimbre} onChange={set("numTimbre")} />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className={labelCls}><Tag className="w-3 h-3" /> Statut Correction</label>
-              <select className={inputCls(formData.statutCorrection)} required={isDateRetraitSaisie} value={formData.statutCorrection} onChange={set("statutCorrection")}>
-                {STATUT_CORRECTION_OPTIONS.map(o => <option key={o} value={o}>{o || "—"}</option>)}
-              </select>
-            </div>
-          </div>
-
-          {/* Table: Autres Charges */}
-          <div className="col-span-2 pt-2">
-            <div className="text-[10px] font-bold text-blue-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <span className="flex-1 h-px bg-blue-200"></span> Autres Charges <span className="flex-1 h-px bg-blue-200"></span>
-            </div>
-            
-            <div className="max-h-60 overflow-y-auto rounded-2xl border border-gray-500 shadow-inner bg-white mb-2">
-              <table className="w-full text-left border-collapse">
-                <thead className="sticky top-0 bg-gray-100 shadow-sm z-10">
-                  <tr className="text-[10px] font-bold text-gray-600 uppercase tracking-wider border-b border-gray-500">
-                    <th className="px-3 py-2">Autre Charge</th>
-                    <th className="px-3 py-2 w-24">Montant</th>
-                    <th className="px-3 py-2">Observation</th>
-                    <th className="px-3 py-2 w-10"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-500">
-                  {autresCharges.map((c, i) => (
-                    <tr key={i} className="group hover:bg-gray-50/50 transition-colors">
-                      <td className="p-2">
-                        <select 
-                          className="w-full bg-transparent border-none focus:ring-0 p-1 font-bold text-gray-700"
-                          value={c.type}
-                          onChange={(e) => updateCharge(i, "type", e.target.value)}
-                        >
-                          <option value="">Sélectionner...</option>
-                          {typeCharges.map(tc => (
-                            <option key={tc.id} value={tc.nom}>{tc.nom}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="p-2">
-                        <input 
-                          type="text"
-                          className="w-full bg-transparent border-none focus:ring-0 p-1 font-mono font-bold text-blue-600"
-                          value={c.montant}
-                          onChange={(e) => updateCharge(i, "montant", e.target.value)}
-                        />
-                      </td>
-                      <td className="p-2">
-                        <input 
-                          className="w-full bg-transparent border-none focus:ring-0 p-1 italic text-gray-500"
-                          placeholder="..."
-                          value={c.observation}
-                          onChange={(e) => updateCharge(i, "observation", e.target.value)}
-                        />
-                      </td>
-                      <td className="p-2 text-right">
-                        <button 
-                          type="button" 
-                          onClick={(e) => { e.preventDefault(); removeCharge(i); }}
-                          className="p-1 px-2 text-red-300 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {autresCharges.length === 0 && (
-                    <tr>
-                      <td colSpan={4} className="py-8 text-center text-gray-300 italic">Aucune charge ajoutée</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="flex gap-2">
-              <button 
-                type="button" 
-                onClick={(e) => { e.preventDefault(); addCharge(); }}
-                className="flex-1 py-2 border-2 border-dashed border-gray-400 rounded-xl text-gray-500 hover:text-primary hover:border-primary/30 transition-all flex items-center justify-center gap-2 text-xs font-bold"
-              >
-                <Plus className="w-4 h-4" /> Ajouter une charge
-              </button>
-              <button 
-                type="button" 
-                onClick={(e) => { e.preventDefault(); setShowAddType(!showAddType); }}
-                className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors text-xs font-bold flex items-center gap-2 border border-blue-100"
-              >
-                Gérer la liste
-              </button>
-            </div>
-
-            {showAddType && (
-              <div className="mt-4 p-4 rounded-xl border border-blue-500 bg-blue-50/30 animate-in slide-in-from-top-2 duration-200">
-                <div className="flex gap-2 mb-4">
-                  <input 
-                    className={`${inputCls("")} border-blue-500 flex-1`}
-                    placeholder="Nouveau type de charge..."
-                    value={newTypeCharge}
-                    onChange={(e) => setNewTypeCharge(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTypeCharge(e as any))}
-                  />
-                  <button 
-                    type="button"
-                    onClick={(e) => handleAddTypeCharge(e)}
-                    className="p-2.5 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors"
-                  >
-                    <CheckCircle2 className="w-5 h-5" />
-                  </button>
+              <div className="grid grid-cols-2 gap-4 bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm shadow-slate-200/50">
+                <div className={`col-span-2 ${isNew ? "" : "hidden"}`}>
+                  <label className={labelCls}><Hash className="w-3 h-3" /> N° Booking</label>
+                  <input className={`${inputCls(formData.booking)} text-lg font-mono font-black text-primary`} required={isNew} value={formData.booking} onChange={set("booking")} placeholder="Ex: 4055010790" />
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {typeCharges.map(tc => (
-                    <div key={tc.id} className="flex items-center gap-1 bg-white border border-gray-200 px-2 py-1 rounded-lg text-[10px] font-bold text-gray-600">
-                      {tc.nom}
-                      <button onClick={(e) => handleDeleteType(tc.id, e)} className="text-red-300 hover:text-red-500">
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
 
-          {/* Section: Retour de BL */}
-          <div className="col-span-2 pt-2">
-            <div className="text-[10px] font-bold text-orange-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <span className="flex-1 h-px bg-orange-200"></span> Gestion du Retour <span className="flex-1 h-px bg-orange-200"></span>
-            </div>
-            
-            {!showReturnForm ? (
-              <button 
-                type="button" 
-                onClick={() => setShowReturnForm(true)}
-                className={`w-full py-3 rounded-xl border-2 border-dashed transition-all flex items-center justify-center gap-2 font-bold text-sm ${
-                  formData.raisonRetour ? "border-orange-500 bg-orange-50 text-orange-700" : "border-gray-300 text-gray-500 hover:border-orange-300 hover:text-orange-600"
-                }`}
-              >
-                <RotateCcw className="w-4 h-4" /> 
-                {formData.raisonRetour ? "Modifier les informations de retour" : "Signaler le retour du BL"}
-              </button>
-            ) : (
-              <div className="p-5 bg-orange-50/50 border border-orange-200 rounded-3xl space-y-4 animate-in zoom-in-95 duration-200">
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="text-xs font-black text-orange-700 uppercase tracking-widest flex items-center gap-2">
-                    <RotateCcw className="w-4 h-4" /> Détails du retour
-                  </h4>
-                  <button onClick={() => setShowReturnForm(false)} className="text-[10px] font-bold text-orange-600 hover:underline">Fermer</button>
+                <div className="space-y-1.5">
+                  <label className={labelCls}><Calendar className="w-3 h-3" /> Date de Retrait</label>
+                  <input type="date" className={inputCls(formData.dateRetrait)} value={formData.dateRetrait} onChange={set("dateRetrait")} />
                 </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className={labelCls}>Raison du retour</label>
-                      <button
+
+                <div className="space-y-1.5">
+                  <label className={labelCls}>POD (Destination)</label>
+                  <input className={inputCls(formData.pod)} required={isDateRetraitSaisie} value={formData.pod} onChange={set("pod")} placeholder="Ex: FRLEH" />
+                </div>
+
+                <div className="col-span-1 space-y-1.5">
+                  <label className={labelCls}>Shipper (Chargeur)</label>
+                  <input className={inputCls(formData.shipper)} required={isDateRetraitSaisie} value={formData.shipper} onChange={set("shipper")} placeholder="Nom du client..." />
+                </div>
+
+                <div className="col-span-1 space-y-1.5">
+                  <label className={labelCls}>Type Connaissement</label>
+                  <select className={inputCls(formData.typeConnaissement)} required={isDateRetraitSaisie} value={formData.typeConnaissement} onChange={set("typeConnaissement")}>
+                    <option value="">— Type —</option>
+                    <option value="OBL">OBL (Original)</option>
+                    <option value="SWB">SWB (Sea Waybill)</option>
+                  </select>
+                </div>
+
+                {/* Document Buttons with Upload Support */}
+                <div className="col-span-2 pt-4">
+                  <label className={labelCls}>Documents BL</label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {(["ORG", "NNG", "SWB"] as const).map(type => {
+                      const isActive = formData[`is${type}` as keyof typeof formData];
+                      const hasUrl = formData[`url${type}` as keyof typeof formData];
+                      const isDisabled = type === "SWB" ? formData.typeConnaissement !== "SWB" : formData.typeConnaissement !== "OBL";
+                      const isThisUploading = isUploading && activeUploadType === type;
+                      
+                      return (
+                        <div key={type} className="relative group">
+                          <button
+                            type="button"
+                            disabled={isDisabled}
+                            onClick={() => handleToggleAndOpen(type)}
+                            className={`w-full py-3 rounded-xl font-black text-[10px] transition-all border-2 flex items-center justify-center gap-2 ${
+                              !isDisabled
+                                ? isActive
+                                  ? type === "SWB" ? "bg-emerald-600 border-emerald-600 text-white" : type === "NNG" ? "bg-indigo-600 border-indigo-600 text-white" : "bg-slate-800 border-slate-800 text-white"
+                                  : "bg-white border-slate-100 text-slate-500 hover:border-slate-200"
+                                : "bg-slate-50 border-slate-50 text-slate-200 cursor-not-allowed"
+                            }`}
+                          >
+                            {isActive && <Eye className="w-3.5 h-3.5" />}
+                            {type}
+                          </button>
+                          
+                          {/* Upload Icon Overlay */}
+                          {!isDisabled && !isNew && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleUploadClick(type); }}
+                              className={`absolute -top-3 -right-2 p-2 rounded-full shadow-xl border-2 transition-all hover:scale-110 active:scale-95 z-20 ${
+                                isThisUploading ? "bg-orange-500 border-white animate-pulse" : hasUrl ? "bg-emerald-500 border-white text-white" : "bg-primary border-white text-white ring-2 ring-primary/20"
+                              }`}
+                              title="Téléverser le PDF Cloud"
+                            >
+                              {isThisUploading ? <Loader2 className="w-3 h-3 animate-spin text-white" /> : <CloudUpload className="w-3 h-3" />}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="col-span-2 pt-2">
+                  <div className="relative group">
+                     <button
                         type="button"
-                        onClick={() => { setShowAddRaison(!showAddRaison); setEditingRaisonId(null); }}
-                        className="text-[10px] font-bold text-orange-600 hover:text-orange-800 flex items-center gap-1"
+                        onClick={() => handleToggleAndOpen("SCANNE")}
+                        className={`w-full py-3 rounded-xl font-black text-[11px] transition-all border-2 flex items-center justify-center gap-2 ${
+                          formData.isScanne ? "bg-blue-600 border-blue-600 text-white shadow-lg" : "bg-white border-blue-100 text-blue-600"
+                        }`}
                       >
-                        <Plus className="w-3 h-3" /> Ajouter une raison
+                        {formData.isScanne && <Eye className="w-4 h-4" />}
+                        DOSSIER SCANNÉ
+                      </button>
+
+                      {/* Upload Icon for Scanned Folder */}
+                      {!isNew && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleUploadClick("SCANNE"); }}
+                          className={`absolute -top-3 -right-2 p-2 rounded-full shadow-xl border-2 transition-all hover:scale-110 active:scale-95 z-20 ${
+                            isUploading && activeUploadType === "SCANNE" ? "bg-orange-500 border-white animate-pulse" : formData.urlScanne ? "bg-emerald-500 border-white text-white" : "bg-primary border-white text-white ring-2 ring-primary/20"
+                          }`}
+                          title="Téléverser le Dossier Scanné"
+                        >
+                          {isUploading && activeUploadType === "SCANNE" ? <Loader2 className="w-3 h-3 animate-spin text-white" /> : <CloudUpload className="w-3 h-3" />}
+                        </button>
+                      )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className={labelCls}><MessageSquare className="w-3 h-3" /> Note Interne</label>
+                <textarea className={`${inputCls(formData.commentaire)} resize-none py-3 min-h-[100px] shadow-sm`} placeholder="Ajouter une instruction..." value={formData.commentaire} onChange={set("commentaire")} />
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="col-span-12 lg:col-span-5 space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-1.5 bg-orange-500 rounded-full" />
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Finance & Suivi</h3>
+              </div>
+
+              <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm shadow-slate-200/50 space-y-4">
+                <div className="space-y-1.5">
+                  <label className={labelCls}><FileText className="w-3 h-3" /> Statut Fret</label>
+                  <select className={inputCls(formData.statutFret)} required={isDateRetraitSaisie} value={formData.statutFret} onChange={set("statutFret")}>
+                    {STATUT_FRET_OPTIONS.map(o => <option key={o} value={o}>{o || "— Sélectionner —"}</option>)}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className={labelCls}><Hash className="w-3 h-3" /> N° Timbre</label>
+                  <input className={inputCls(formData.numTimbre)} required={isDateRetraitSaisie} placeholder="T-XXXXXX" value={formData.numTimbre} onChange={set("numTimbre")} />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className={labelCls}><Tag className="w-3 h-3" /> Correction BL</label>
+                  <select className={inputCls(formData.statutCorrection)} required={isDateRetraitSaisie} value={formData.statutCorrection} onChange={set("statutCorrection")}>
+                    {STATUT_CORRECTION_OPTIONS.map(o => <option key={o} value={o}>{o || "— Sélectionner —"}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* Autres Charges */}
+              <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm shadow-slate-200/50">
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                  <label className={labelCls}>Charges Additionnelles</label>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => setShowTypeManager(!showTypeManager)} className={`text-[9px] font-black p-1 px-2 rounded-lg border transition-all uppercase ${showTypeManager ? "bg-orange-100 border-orange-200 text-orange-600" : "bg-slate-50 border-slate-100 text-slate-400 hover:text-primary hover:border-primary"}`}>
+                      {showTypeManager ? "ANNULER" : "(+) TYPE"}
+                    </button>
+                    <button type="button" onClick={addCharge} className="text-[10px] font-black text-primary flex items-center gap-1 bg-primary/5 p-1 px-2 rounded-lg border border-primary/10 hover:bg-primary hover:text-white transition-all"><Plus className="w-3 h-3" /> AJOUTER</button>
+                  </div>
+                </div>
+
+                {showTypeManager && (
+                  <div className="mb-4 p-3 bg-blue-50/50 border border-blue-100 rounded-xl space-y-2 animate-in slide-in-from-top-2">
+                    <p className="text-[9px] font-black text-blue-400 uppercase tracking-wider">Nouveau Type de Charge</p>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        value={newTypeName} 
+                        onChange={(e) => setNewTypeName(e.target.value.toUpperCase())}
+                        placeholder="Ex: FRAIS DE DOSSIER"
+                        className="flex-1 bg-white border border-blue-100 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                      <button 
+                        type="button" 
+                        disabled={isCreatingType || !newTypeName.trim()}
+                        onClick={handleCreateTypeCharge}
+                        className="bg-primary text-white p-2 rounded-lg disabled:opacity-50 transition-all hover:scale-105"
+                      >
+                        {isCreatingType ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                       </button>
                     </div>
-                    {showAddRaison && (
-                      <div className="flex gap-2 mb-1">
-                        <input
-                          className="flex-1 px-3 py-1.5 rounded-lg border border-orange-300 text-xs focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-                          placeholder="Nouvelle raison..."
-                          value={newRaisonRetour}
-                          onChange={e => setNewRaisonRetour(e.target.value)}
-                          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddRaisonRetour(e as any); } }}
-                        />
-                        <button type="button" onClick={handleAddRaisonRetour} className="px-3 py-1.5 bg-orange-500 text-white text-xs rounded-lg hover:bg-orange-600 font-bold">
-                          Ajouter
-                        </button>
-                        <button type="button" onClick={() => setShowAddRaison(false)} className="px-2 py-1.5 text-gray-400 hover:text-gray-600 text-xs">
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
+                  </div>
+                )}
+
+                <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                  {autresCharges.map((c, i) => (
+                    <div key={i} className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-100">
+                      <select className="bg-transparent border-none p-0 text-[11px] font-bold text-slate-700 flex-1" value={c.type} onChange={(e) => updateCharge(i, "type", e.target.value)}>
+                        <option value="">Type...</option>
+                        {typeCharges.map(tc => <option key={tc.id} value={tc.nom}>{tc.nom}</option>)}
+                      </select>
+                      <input 
+                        className="w-32 bg-white/50 px-2 py-1 rounded-lg border-2 border-slate-300 text-[11px] font-mono font-black text-blue-600 text-right focus:ring-1 focus:ring-blue-200 transition-all shadow-sm" 
+                        value={formatAmount(c.montant)} 
+                        onChange={(e) => updateCharge(i, "montant", e.target.value)} 
+                      />
+                      <button onClick={() => removeCharge(i)} className="text-slate-300 hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Retour */}
+              <div className={`p-6 rounded-[2rem] border transition-all ${formData.raisonRetour ? "bg-orange-50 border-orange-200" : "bg-white border-slate-100"}`}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <RotateCcw className={`w-4 h-4 ${formData.raisonRetour ? "text-orange-500" : "text-slate-300"}`} />
+                    <span className="text-[10px] font-black text-slate-800 uppercase uppercase">Retour Dossier</span>
+                  </div>
+                  {!showReturnForm && (
+                     <button type="button" onClick={() => setShowReturnForm(true)} className="text-[9px] font-black p-1 px-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-orange-500 hover:text-white uppercase">{formData.raisonRetour ? "Modifier" : "Signaler"}</button>
+                  )}
+                </div>
+                {showReturnForm && (
+                  <div className="space-y-3 animate-in slide-in-from-top-2">
                     <select className={inputCls(formData.raisonRetour)} value={formData.raisonRetour} onChange={set("raisonRetour")}>
-                      <option value="">— Sélectionner une raison —</option>
+                      <option value="">Raison...</option>
                       {raisonRetourOptions.map(o => <option key={o.id} value={o.nom}>{o.nom}</option>)}
                     </select>
-                    {raisonRetourOptions.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {raisonRetourOptions.map(o => (
-                          <div key={o.id} className="flex items-center gap-1 bg-white border border-orange-200 px-2 py-1 rounded-lg text-[10px] font-bold text-orange-700">
-                            {editingRaisonId === o.id ? (
-                              <>
-                                <input
-                                  className="border-b border-orange-400 bg-transparent text-[10px] font-bold outline-none w-24"
-                                  value={editingRaisonNom}
-                                  onChange={e => setEditingRaisonNom(e.target.value)}
-                                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleEditRaisonRetour(e as any); } }}
-                                  autoFocus
-                                />
-                                <button type="button" onClick={handleEditRaisonRetour} className="text-green-500 hover:text-green-700">
-                                  <CheckCircle2 className="w-3 h-3" />
-                                </button>
-                                <button type="button" onClick={() => { setEditingRaisonId(null); setEditingRaisonNom(""); }} className="text-gray-400 hover:text-gray-600">
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                <span>{o.nom}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => { setEditingRaisonId(o.id); setEditingRaisonNom(o.nom); setShowAddRaison(false); }}
-                                  className="text-orange-300 hover:text-orange-600"
-                                >
-                                  <FileText className="w-3 h-3" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={(e) => handleDeleteRaisonRetour(o.id, o.nom, e)}
-                                  className="text-red-300 hover:text-red-500"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                      <input type="date" className={inputCls(formData.dateRetour)} value={formData.dateRetour} onChange={set("dateRetour")} />
+                      <button type="button" onClick={() => setShowReturnForm(false)} className="bg-slate-800 text-white text-[10px] font-black rounded-xl">OK</button>
+                    </div>
                   </div>
-
-                  <div className="space-y-1.5">
-                    <label className={labelCls}>Date de retour</label>
-                    <input type="date" className={inputCls(formData.dateRetour)} value={formData.dateRetour} onChange={set("dateRetour")} />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className={labelCls}>N° Facture</label>
-                    <input className={inputCls(formData.numFactureRetour)} placeholder="Ex: FAC-2024-001" value={formData.numFactureRetour} onChange={set("numFactureRetour")} />
-                  </div>
-                </div>
-                
-                {formData.raisonRetour && (
-                  <button 
-                    type="button" 
-                    onClick={() => setFormData({...formData, raisonRetour: "", dateRetour: "", numFactureRetour: ""})}
-                    className="text-[10px] font-bold text-red-400 hover:text-red-600 flex items-center gap-1 pt-2"
-                  >
-                    <Trash2 className="w-3 h-3" /> Effacer les données de retour
-                  </button>
                 )}
+                {formData.raisonRetour && !showReturnForm && <div className="text-[11px] font-bold text-orange-700 bg-white/50 p-2 rounded-lg">{formData.raisonRetour}</div>}
               </div>
+            </div>
+          </div>
+
+          {/* Footer Actions */}
+          <div className="flex gap-4 pt-4 border-t border-slate-100 flex-shrink-0">
+            <button type="button" onClick={onClose} className="flex-1 px-6 py-4 rounded-[1.5rem] border-2 border-slate-100 font-black text-slate-400 text-xs uppercase">Fermer</button>
+            
+            {bl && (
+              <button 
+                type="button" 
+                onClick={async () => {
+                  if (window.confirm(`Voulez-vous vraiment supprimer le BL ${bl.booking} ?`)) {
+                    setIsSaving(true);
+                    try {
+                      const res = await fetch(`/api/bls/${bl.id}`, { method: "DELETE" });
+                      if (res.ok) {
+                        onSave();
+                        onClose();
+                      }
+                    } catch (err) {
+                      console.error(err);
+                    } finally {
+                      setIsSaving(false);
+                    }
+                  }
+                }}
+                disabled={isSaving || isUploading}
+                className="px-6 py-4 rounded-[1.5rem] bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border-2 border-red-100 transition-all active:scale-95 disabled:opacity-50"
+                title="Supprimer ce BL"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
             )}
-          </div>
 
-          {/* Commentaire */}
-          <div className="col-span-2 space-y-1.5">
-            <label className={labelCls}><MessageSquare className="w-3 h-3" /> Commentaire</label>
-            <textarea
-              className={`${inputCls} resize-none`}
-              rows={3}
-              placeholder="Ajouter un commentaire..."
-              value={formData.commentaire}
-              onChange={set("commentaire")}
-            />
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-4 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-6 py-3 rounded-xl border border-gray-200 font-bold text-gray-500 hover:bg-gray-50 transition-all"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="flex-1 px-6 py-3 rounded-xl bg-primary text-white font-bold hover:shadow-lg hover:shadow-primary/30 transition-all flex items-center justify-center gap-2"
-            >
-              <Save className="w-5 h-5" />
-              {isSaving ? "Enregistrement..." : isNew ? "Ajouter à la liste" : "Enregistrer"}
+            <button type="submit" disabled={isSaving || isUploading} className="flex-[2] px-6 py-4 rounded-[1.5rem] bg-primary text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50">
+              {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5" /> Enregistrer les modifications</>}
             </button>
           </div>
         </form>

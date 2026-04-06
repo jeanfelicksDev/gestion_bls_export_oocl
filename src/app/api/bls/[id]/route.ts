@@ -12,7 +12,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       const updatedBl = await tx.bL.update({
         where: { id },
         data: {
-          statut: body.statut || null,
+          statut: body.dateRetrait ? "RETIRE" : "EN ATTENTE RETRAIT",
           dateRetrait: body.dateRetrait ? new Date(body.dateRetrait) : null,
           pod: body.pod || null,
           shipper: body.shipper || null,
@@ -29,6 +29,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           raisonRetour: body.raisonRetour || null,
           dateRetour: body.dateRetour ? new Date(body.dateRetour) : null,
           numFactureRetour: body.numFactureRetour || null,
+          isORG: typeof body.isORG !== 'undefined' ? Boolean(body.isORG) : undefined,
+          isNNG: typeof body.isNNG !== 'undefined' ? Boolean(body.isNNG) : undefined,
+          isSWB: typeof body.isSWB !== 'undefined' ? Boolean(body.isSWB) : undefined,
+          isScanne: typeof body.isScanne !== 'undefined' ? Boolean(body.isScanne) : undefined,
         },
       });
 

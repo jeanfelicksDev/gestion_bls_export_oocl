@@ -76,10 +76,12 @@ export default function ExcelUpload({ onUploadSuccess }: ExcelUploadProps) {
           pod: row[1],
           shipper: row[2],
           statut: row[3],
-          typeConnaissement: row[4],
-          tender: row[5],
-          freighting: row[6],
-          valeurFret: row[7],
+          montantFret: row[4],
+          statutCorrection: row[5],
+          numTimbre: row[6],
+          dateRetrait: row[7],
+          typeConnaissement: row[8],
+          commentaire: row[9],
         }));
 
         const response = await fetch("/api/voyages", {

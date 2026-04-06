@@ -3,12 +3,13 @@
 import React, { useState, useEffect } from "react";
 import {
   Ship, Anchor, LayoutDashboard, Settings, CalendarPlus,
-  ChevronRight, ChevronDown, History, Circle
+  ChevronRight, ChevronDown, History, Circle, FilePlus
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import NavireModal from "./NavireModal";
 import VoyageModal from "./VoyageModal";
+import AddBlModal from "./AddBlModal";
 
 interface SidebarProps {
   onRefresh: () => void;
@@ -55,6 +56,7 @@ function buildTree(voyages: VoyageItem[]) {
 export default function Sidebar({ onRefresh }: SidebarProps) {
   const [showNavireModal, setShowNavireModal] = useState(false);
   const [showVoyageModal, setShowVoyageModal] = useState(false);
+  const [showAddBlModal, setShowAddBlModal] = useState(false);
   const [voyages, setVoyages] = useState<VoyageItem[]>([]);
   const [openYears, setOpenYears] = useState<Record<string, boolean>>({});
   const [openMonths, setOpenMonths] = useState<Record<string, boolean>>({});
@@ -128,6 +130,14 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
           >
             <CalendarPlus className="w-5 h-5 text-orange-400 group-hover:scale-110 transition-transform" />
             Créer Voyage
+          </button>
+
+          <button
+            onClick={() => setShowAddBlModal(true)}
+            className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl text-gray-600 font-bold hover:bg-white hover:text-primary transition-all border border-transparent hover:border-gray-100 hover:shadow-xl hover:shadow-gray-200/50 group"
+          >
+            <FilePlus className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
+            Ajouter Bls
           </button>
 
           {/* Historique Navire */}
@@ -231,6 +241,7 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
 
       {showNavireModal && <NavireModal onClose={() => setShowNavireModal(false)} onSuccess={onRefresh} />}
       {showVoyageModal && <VoyageModal onClose={() => setShowVoyageModal(false)} onSuccess={onRefresh} />}
+      {showAddBlModal && <AddBlModal onClose={() => setShowAddBlModal(false)} onSuccess={onRefresh} />}
     </>
   );
 }

@@ -60,6 +60,16 @@ model BL {
   dateRetour         DateTime?
   numFactureRetour   String?
 
+  // Flags spéciaux
+  isORG              Boolean   @default(false)
+  isNNG              Boolean   @default(false)
+  isSWB              Boolean   @default(false)
+  isScanne           Boolean   @default(false)
+  urlORG             String?
+  urlNNG             String?
+  urlSWB             String?
+  urlScanne          String?
+
   voyageId           String
   voyage             Voyage    @relation(fields: [voyageId], references: [id], onDelete: Cascade)
   autresCharges      AutreCharge[]

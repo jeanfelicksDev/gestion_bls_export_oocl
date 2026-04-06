@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "OOCL BL Tracking",
+  title: "OOCL Suivre la relâche des connaissements",
   description: "Système de suivi des BL Export OOCL",
 };
 

@@ -14,7 +14,7 @@ export async function POST(req: Request) {
       data: {
         booking: String(body.booking),
         voyageId: body.voyageId,
-        statut: body.statut || null,
+        statut: body.dateRetrait ? "RETIRE" : "EN ATTENTE RETRAIT",
         dateRetrait: body.dateRetrait ? new Date(body.dateRetrait) : null,
         pod: body.pod || null,
         shipper: body.shipper || null,
@@ -31,6 +31,10 @@ export async function POST(req: Request) {
         raisonRetour: body.raisonRetour || null,
         dateRetour: body.dateRetour ? new Date(body.dateRetour) : null,
         numFactureRetour: body.numFactureRetour || null,
+        isORG: Boolean(body.isORG),
+        isNNG: Boolean(body.isNNG),
+        isSWB: Boolean(body.isSWB),
+        isScanne: Boolean(body.isScanne),
         autresCharges: body.autresCharges ? {
           create: body.autresCharges.map((c: any) => ({
             type: c.type,
