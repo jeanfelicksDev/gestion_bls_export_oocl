@@ -250,7 +250,7 @@ export default function Dashboard() {
                     (viewMode as string) === "unreleased" ? "bg-purple-50 border-purple-300 ring-2 ring-purple-100" : "bg-white border-purple-100 shadow-xl shadow-purple-500/5 hover:border-purple-300"
                   }`}
                 >
-                  <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Total Non Relâchés</p>
+                  <p className="text-slate-800 font-bold uppercase tracking-widest text-[10px]">Total Non Relâchés</p>
                   <div className="flex items-center gap-3">
                     <div className="bg-purple-50 p-2.5 rounded-2xl flex-shrink-0">
                       <AlertCircle className="w-5 h-5 text-purple-500" />
@@ -265,7 +265,7 @@ export default function Dashboard() {
                     (viewMode as string) === "critical" ? "bg-orange-50 border-orange-300 ring-2 ring-orange-100" : "bg-white border-orange-100 shadow-xl shadow-orange-500/5 hover:border-orange-300"
                   }`}
                 >
-                  <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Non Relâchés &gt; 15J</p>
+                  <p className="text-slate-800 font-bold uppercase tracking-widest text-[10px]">Non Relâchés &gt; 15J</p>
                   <div className="flex items-center gap-3">
                     <div className="bg-orange-50 p-2.5 rounded-2xl flex-shrink-0">
                       <Clock className="w-5 h-5 text-orange-500" />
@@ -280,7 +280,7 @@ export default function Dashboard() {
                     (viewMode as string) === "no-scanned" ? "bg-rose-50 border-rose-300 ring-2 ring-rose-100" : "bg-white border-rose-100 shadow-xl shadow-rose-500/5 hover:border-rose-300"
                   }`}
                 >
-                  <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Dossiers Non Scannés</p>
+                  <p className="text-slate-800 font-bold uppercase tracking-widest text-[10px]">Dossiers Non Scannés</p>
                   <div className="flex items-center gap-3">
                     <div className="bg-rose-50 p-2.5 rounded-2xl flex-shrink-0">
                       <CloudUpload className="w-5 h-5 text-rose-500" />
@@ -295,7 +295,7 @@ export default function Dashboard() {
                     (viewMode as string) === "with-notes" ? "bg-indigo-50 border-indigo-300 ring-2 ring-indigo-100" : "bg-white border-indigo-100 shadow-xl shadow-indigo-500/5 hover:border-indigo-300"
                   }`}
                 >
-                  <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Notes Internes</p>
+                  <p className="text-slate-800 font-bold uppercase tracking-widest text-[10px]">Notes Internes</p>
                   <div className="flex items-center gap-3">
                     <div className="bg-indigo-50 p-2.5 rounded-2xl flex-shrink-0">
                       <MessageSquare className="w-5 h-5 text-indigo-500" />
@@ -310,7 +310,7 @@ export default function Dashboard() {
                     (viewMode as string) === "unrated" ? "bg-blue-50 border-blue-300 ring-2 ring-blue-100" : "bg-white border-blue-100 shadow-xl shadow-blue-500/5 hover:border-blue-300"
                   }`}
                 >
-                  <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Statut Fret Unrated</p>
+                  <p className="text-slate-800 font-bold uppercase tracking-widest text-[10px]">Statut Fret Unrated</p>
                   <div className="flex items-center gap-3">
                     <div className="bg-blue-50 p-2.5 rounded-2xl flex-shrink-0">
                       <AlertTriangle className="w-5 h-5 text-blue-500" />
@@ -325,7 +325,7 @@ export default function Dashboard() {
                     (viewMode as string) === "no-freight" ? "bg-slate-50 border-slate-300 ring-2 ring-slate-100" : "bg-white border-slate-100 shadow-xl shadow-slate-500/5 hover:border-slate-300"
                   }`}
                 >
-                  <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Pas Encore Freté</p>
+                  <p className="text-slate-800 font-bold uppercase tracking-widest text-[10px]">Pas Encore Freté</p>
                   <div className="flex items-center gap-3">
                     <div className="bg-slate-50 p-2.5 rounded-2xl flex-shrink-0">
                       <CircleSlash className="w-5 h-5 text-slate-500" />
@@ -338,7 +338,7 @@ export default function Dashboard() {
               {/* Row 2: Global Statistics (Static) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 max-w-4xl">
                 <div className="bg-white p-6 rounded-3xl border border-blue-100 shadow-xl shadow-blue-500/5 flex flex-col gap-4">
-                  <p className="text-gray-400 font-bold uppercase tracking-widest text-[11px]">Total de BLs</p>
+                  <p className="text-slate-800 font-bold uppercase tracking-widest text-[11px]">Total de BLs</p>
                   <div className="flex items-center gap-4">
                     <div className="bg-blue-50 p-3 rounded-2xl flex-shrink-0">
                       <FileSpreadsheet className="w-6 h-6 text-blue-500" />
@@ -348,7 +348,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className="bg-white p-6 rounded-3xl border border-teal-100 shadow-xl shadow-teal-500/5 flex flex-col gap-4">
-                  <p className="text-gray-400 font-bold uppercase tracking-widest text-[11px]">Total de Voyages</p>
+                  <p className="text-slate-800 font-bold uppercase tracking-widest text-[11px]">Total de Voyages</p>
                   <div className="flex items-center gap-4">
                     <div className="bg-teal-50 p-3 rounded-2xl flex-shrink-0">
                       <ShipWheel className="w-6 h-6 text-teal-500" />
