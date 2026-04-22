@@ -211,12 +211,12 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
           <div className="flex items-center gap-4">
             <div className="flex gap-2 text-sm">
               <div className="bg-white/50 px-3 py-1.5 rounded-xl border border-blue-200/50 flex items-center gap-2 whitespace-nowrap">
-                <span className="text-slate-700-muted text-[10px] uppercase font-bold tracking-wider">ETA</span>
-                <span className="font-bold text-sm">{voyage.eta ? format(new Date(voyage.eta), "d MMM yy", { locale: fr }) : "-"}</span>
+                <span className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">ETA</span>
+                <span className="font-bold text-sm text-gray-800">{voyage.eta ? format(new Date(voyage.eta), "d MMM yy", { locale: fr }) : "-"}</span>
               </div>
               <div className="bg-white/50 px-3 py-1.5 rounded-xl border border-blue-200/50 flex items-center gap-2 whitespace-nowrap">
-                <span className="text-slate-700-muted text-[10px] uppercase font-bold tracking-wider">ETD</span>
-                <span className="font-bold text-sm">{voyage.etd ? format(new Date(voyage.etd), "d MMM yy", { locale: fr }) : "-"}</span>
+                <span className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">ETD</span>
+                <span className="font-bold text-sm text-gray-800">{voyage.etd ? format(new Date(voyage.etd), "d MMM yy", { locale: fr }) : "-"}</span>
               </div>
             </div>
             {voyage.etdConfirmed ? (
@@ -300,7 +300,7 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
         <div className="p-0 overflow-x-auto">
           <table className="w-full min-w-[800px] text-left border-collapse whitespace-nowrap">
             <thead>
-              <tr className="bg-brand-bg/50 text-slate-700-muted text-xs uppercase tracking-wider font-bold">
+              <tr className="bg-brand-bg/50 text-gray-400 text-xs uppercase tracking-wider font-bold">
                 <th className="px-6 py-4">Booking</th>
                 <th className="px-6 py-4">Shipper</th>
                 <th className="px-6 py-4">Statut</th>
@@ -309,13 +309,13 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-white/10">
               {displayedBLs.map((bl) => {
                 const days = voyage.etdConfirmed ? calculateWorkingDays(voyage.etd, bl.dateRetrait) : null;
                 
                 return (
-                  <tr key={bl.id} className="hover:bg-slate-50/30 transition-colors">
-                    <td className="px-6 py-4 font-mono font-bold text-slate-700 text-base">
+                  <tr key={bl.id} className="hover:bg-slate-50/10 transition-colors">
+                    <td className="px-6 py-4 font-mono font-bold text-gray-200 text-base">
                       <div className="flex items-center gap-2">
                         {bl.booking}
                         {bl.raisonRetour && (
@@ -331,13 +331,13 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-slate-700 font-bold max-w-[200px] truncate">{bl.shipper}</td>
+                    <td className="px-6 py-4 text-sm text-gray-200 font-bold max-w-[200px] truncate">{bl.shipper}</td>
                     <td className="px-6 py-4">
                       <StatusBadge status={bl.dateRetrait ? "RETIRE" : "EN ATTENTE RETRAIT"} />
                     </td>
                     <td className="px-6 py-4 text-sm font-medium">
                       {bl.dateRetrait ? (
-                        <span className="text-slate-700">{format(new Date(bl.dateRetrait), "dd/MM/yyyy")}</span>
+                        <span className="text-gray-200">{format(new Date(bl.dateRetrait), "dd/MM/yyyy")}</span>
                       ) : (
                         <span className="text-gray-400 italic">En attente</span>
                       )}
