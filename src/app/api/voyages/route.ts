@@ -14,6 +14,7 @@ export async function POST(req: Request) {
           numero: body.numero,
           eta: body.eta ? new Date(body.eta) : null,
           etd: body.etd ? new Date(body.etd) : null,
+          tauxDollar: body.tauxDollar ? String(body.tauxDollar) : null,
         },
       });
       return NextResponse.json(voyage);
@@ -31,40 +32,61 @@ export async function POST(req: Request) {
       create: { nom: header.navire },
     });
 
-    // Create Voyage linked to Navire
+    // Create Voyage linked to Navire (without bls initially)
     const voyage = await prisma.voyage.create({
       data: {
         navireId: navire.id,
         numero: header.voyage,
         eta: header.eta ? new Date(header.eta) : null,
         etd: header.etd ? new Date(header.etd) : null,
-        bls: {
-          create: bls.map((bl: any) => ({
-            booking: String(bl.booking),
-            pod: bl.pod,
-            shipper: bl.shipper,
-            statut: bl.statut,
-            typeConnaissement: bl.typeConnaissement,
-            montantFret: String(bl.montantFret || ""),
-            statutCorrection: bl.statutCorrection,
-            numTimbre: bl.numTimbre ? String(bl.numTimbre) : null,
-            dateRetrait: bl.dateRetrait ? new Date(bl.dateRetrait) : null,
-            commentaire: bl.commentaire,
-            deviseFret: String(bl.deviseFret || "EUR"),
-          })),
-        },
+        tauxDollar: header.tauxDollar ? String(header.tauxDollar) : "600 XOF",
       },
       include: {
-        bls: {
-          include: {
-            autresCharges: true
-          }
-        },
-        navire: {
-          include: { coque: true }
-        },
+        navire: { include: { coque: true } },
       },
     });
+
+    // Upsert each BL to handle existing orphans (cache de notes)
+    for (const bl of bls) {
+      const bookingStr = String(bl.booking).trim().toUpperCase();
+      if (!bookingStr) continue;
+
+      const blData: any = {
+        voyageId: voyage.id,
+        pod: bl.pod,
+        shipper: bl.shipper,
+        statutFret: bl.statutFret,
+        typeConnaissement: bl.typeConnaissement,
+        montantFret: String(bl.montantFret || ""),
+        statutCorrection: bl.statutCorrection,
+        numTimbre: bl.numTimbre ? String(bl.numTimbre) : undefined,
+        dateRetrait: bl.dateRetrait ? new Date(bl.dateRetrait) : undefined,
+        commentaire: (bl.commentaire && String(bl.commentaire).trim() !== "") ? String(bl.commentaire).trim() : undefined,
+        deviseFret: String(bl.deviseFret || "EUR"),
+      };
+
+      await prisma.bL.upsert({
+        where: { booking: bookingStr },
+        update: blData,
+        create: {
+          booking: bookingStr,
+          ...blData,
+        },
+      });
+    }
+
+    // Refresh voyage data with bls
+    const updatedVoyage = await prisma.voyage.findUnique({
+      where: { id: voyage.id },
+      include: {
+        bls: {
+          include: { autresCharges: true }
+        },
+        navire: { include: { coque: true } },
+      },
+    });
+
+    return NextResponse.json(updatedVoyage);
 
     return NextResponse.json(voyage);
   } catch (error: any) {
@@ -90,6 +112,28 @@ export async function GET() {
         createdAt: "desc",
       },
     });
+
+    const orphanBls = await prisma.bL.findMany({
+      where: { voyageId: null },
+      include: { autresCharges: true }
+    });
+
+    if (orphanBls.length > 0) {
+      const virtualVoyage = {
+        id: "pre-vessel",
+        numero: "SANS NAVIRE",
+        navire: { nom: "DOSSIERS PRÉ-SAISIS" },
+        bls: orphanBls,
+        etd: null,
+        eta: null,
+        etdConfirmed: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      // @ts-ignore
+      voyages.unshift(virtualVoyage);
+    }
+
     return NextResponse.json(voyages);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

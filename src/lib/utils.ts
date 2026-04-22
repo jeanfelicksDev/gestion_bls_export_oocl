@@ -55,23 +55,67 @@ export function calculateWorkingDays(etd: Date | string | null, dateRetrait: Dat
 export function formatAmount(val: string | number | null | undefined): string {
   if (val === null || val === undefined || val === "") return "";
   
-  // Strip all spaces first to work with clean string
-  const s = val.toString().replace(/\s/g, "");
+  const originalStr = val.toString().trim();
   
-  // Match numeric part and currency part (letters)
-  const match = s.match(/^(\d+)?([a-zA-Z]+)?$/);
-  if (!match) return s; // Fallback to raw string if complex
+  // Handle complex amounts with '+' (e.g., 20000USD+700EUR)
+  if (originalStr.includes("+")) {
+    return originalStr
+      .split("+")
+      .map(part => formatSingleAmount(part.trim()))
+      .join(" + ");
+  }
 
-  const numPart = match[1] || "";
-  const currencyPart = match[2] || "";
+  return formatSingleAmount(originalStr);
+}
 
-  // Format numeric part with spaces
-  const formattedNum = numPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-
-  if (!currencyPart) return formattedNum;
+/**
+ * Internal helper to format a single amount segment like "20000USD", "567,45" or "30 000"
+ */
+function formatSingleAmount(s: string | null | undefined): string {
+  if (!s) return "";
   
-  // Combine with uppercase currency
-  return `${formattedNum} ${currencyPart.toUpperCase()}`.trim();
+  // Strip internal spaces for clean parsing
+  const clean = s.replace(/\s/g, "");
+  
+  // Find first non-numeric character (digit, dot, comma) to separate number from currency/text
+  const letterIndex = clean.search(/[^0-9,.]/);
+  
+  let numPart = "";
+  let extraPart = "";
+
+  if (letterIndex === -1) {
+    numPart = clean;
+  } else {
+    numPart = clean.substring(0, letterIndex);
+    extraPart = clean.substring(letterIndex);
+  }
+
+  // Format numeric part
+  let formattedNum = "";
+  if (numPart && numPart !== "-") {
+    // Support both dot and comma as decimal separators
+    const hasComma = numPart.includes(",");
+    const hasDot = numPart.includes(".");
+    const separator = hasComma ? "," : (hasDot ? "." : "");
+    
+    // Split to find integer and decimal
+    const parts = numPart.split(/[.,]/);
+    const integerPart = parts[0] || "0";
+    const decimalPart = parts[1];
+
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    formattedNum = decimalPart !== undefined 
+      ? `${formattedInteger}${separator}${decimalPart}` 
+      : formattedInteger;
+  } else if (numPart === "-") {
+    formattedNum = "-";
+  }
+
+  if (!extraPart) return formattedNum;
+  
+  // Combine with uppercase currency/text, ensuring at least one space
+  const result = `${formattedNum} ${extraPart.toUpperCase()}`.trim();
+  return result.replace(/([0-9,.]+)\s*([^0-9,.\s]+)/g, "$1 $2");
 }
 
 /**

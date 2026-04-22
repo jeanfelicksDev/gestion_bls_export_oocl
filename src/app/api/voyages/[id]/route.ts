@@ -12,6 +12,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         etdConfirmed: body.etdConfirmed ?? undefined,
         etd: body.etd ? new Date(body.etd) : undefined,
         eta: body.eta ? new Date(body.eta) : undefined,
+        tauxDollar: body.tauxDollar !== undefined ? String(body.tauxDollar) : undefined,
       },
     });
 

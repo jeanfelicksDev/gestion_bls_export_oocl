@@ -3,6 +3,7 @@
 import React, { useState, useRef } from "react";
 import { X, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import * as XLSX from "xlsx";
+import { fetchSync } from "@/lib/fetchSync";
 
 interface BLUploadModalProps {
   voyageId: string;
@@ -58,7 +59,7 @@ export default function BLUploadModal({ voyageId, voyageLabel, onClose, onSucces
           return;
         }
 
-        const res = await fetch(`/api/voyages/${voyageId}/bls`, {
+        const res = await fetchSync(`/api/voyages/${voyageId}/bls`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ bls }),
@@ -90,9 +91,9 @@ export default function BLUploadModal({ voyageId, voyageLabel, onClose, onSucces
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div className="bg-brand-card rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
         {/* Header */}
-        <div className="bg-primary p-6 text-white flex justify-between items-center">
+        <div className="bg-primary p-4 md:p-6 text-white flex justify-between items-center">
           <div>
             <div className="flex items-center gap-3">
               <FileSpreadsheet className="w-6 h-6" />
@@ -100,12 +101,12 @@ export default function BLUploadModal({ voyageId, voyageLabel, onClose, onSucces
             </div>
             <p className="text-blue-200 text-sm mt-1 ml-9">{voyageLabel}</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-brand-card/10 rounded-full transition-colors">
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        <div className="p-8 space-y-6">
+        <div className="p-4 md:p-8 space-y-6">
           {/* Drop zone */}
           {status !== "success" && (
             <div
@@ -115,7 +116,7 @@ export default function BLUploadModal({ voyageId, voyageLabel, onClose, onSucces
               onClick={() => status !== "loading" && inputRef.current?.click()}
               className={`
                 relative flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-2xl cursor-pointer transition-all
-                ${isDragging ? "border-primary bg-blue-50 scale-[1.02]" : "border-gray-200 bg-gray-50 hover:border-primary hover:bg-blue-50/30"}
+                ${isDragging ? "border-primary bg-brand-surface scale-[1.02]" : "border-brand-border-highlight bg-brand-bg hover:border-primary hover:bg-brand-surface/30"}
                 ${status === "loading" ? "opacity-50 cursor-not-allowed" : ""}
               `}
             >
@@ -138,10 +139,10 @@ export default function BLUploadModal({ voyageId, voyageLabel, onClose, onSucces
                 </>
               ) : (
                 <>
-                  <div className={`p-4 rounded-2xl mb-4 transition-all ${isDragging ? "bg-primary text-white scale-110" : "bg-white text-gray-400 shadow-sm"}`}>
+                  <div className={`p-4 rounded-2xl mb-4 transition-all ${isDragging ? "bg-primary text-white scale-110" : "bg-brand-card text-gray-400 shadow-sm"}`}>
                     <Upload className="w-8 h-8" />
                   </div>
-                  <p className="text-gray-700 font-semibold text-center">
+                  <p className="text-brand-text font-semibold text-center">
                     {isDragging ? "Déposez le fichier ici" : "Cliquez ou glissez-déposez"}
                   </p>
                   <p className="text-gray-400 text-sm mt-1">Fichier Excel (.xlsx, .xls)</p>
@@ -156,8 +157,8 @@ export default function BLUploadModal({ voyageId, voyageLabel, onClose, onSucces
               <div className="bg-green-100 p-5 rounded-full mb-4">
                 <CheckCircle2 className="w-12 h-12 text-green-500" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800">Chargement réussi !</h3>
-              <p className="text-gray-500 mt-2">
+              <h3 className="text-xl font-bold text-brand-text">Chargement réussi !</h3>
+              <p className="text-brand-text-muted mt-2">
                 <span className="font-black text-green-600 text-2xl">{count}</span> BL{count > 1 ? "s" : ""} chargé{count > 1 ? "s" : ""} avec succès.
               </p>
             </div>
@@ -175,7 +176,7 @@ export default function BLUploadModal({ voyageId, voyageLabel, onClose, onSucces
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-6 py-3 rounded-xl border border-gray-200 font-bold text-gray-500 hover:bg-gray-50 transition-all"
+              className="flex-1 px-6 py-3 rounded-xl border border-brand-border-highlight font-bold text-brand-text-muted hover:bg-brand-bg transition-all"
             >
               {status === "success" ? "Fermer" : "Annuler"}
             </button>

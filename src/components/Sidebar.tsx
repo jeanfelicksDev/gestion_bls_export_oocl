@@ -10,6 +10,9 @@ import { fr } from "date-fns/locale";
 import NavireModal from "./NavireModal";
 import VoyageModal from "./VoyageModal";
 import AddBlModal from "./AddBlModal";
+import PreBlModal from "./PreBlModal";
+import { ClipboardList } from "lucide-react";
+import { fetchSync } from "@/lib/fetchSync";
 
 interface SidebarProps {
   onRefresh: () => void;
@@ -44,12 +47,23 @@ function buildTree(voyages: VoyageItem[]) {
     tree[year][month].push(v);
   }
 
+  const MONTH_ORDER: Record<string, number> = {
+    "janvier": 1, "février": 2, "mars": 3, "avril": 4, "mai": 5, "juin": 6,
+    "juillet": 7, "août": 8, "septembre": 9, "octobre": 10, "novembre": 11, "décembre": 12
+  };
+
   // Sort years descending
   return Object.entries(tree)
     .sort(([a], [b]) => (b === "Sans date" ? -1 : a === "Sans date" ? 1 : Number(b) - Number(a)))
     .map(([year, months]) => ({
       year,
-      months: Object.entries(months).map(([month, voyages]) => ({ month, voyages })),
+      months: Object.entries(months)
+        .sort(([a], [b]) => {
+          const orderA = MONTH_ORDER[a.toLowerCase()] || 0;
+          const orderB = MONTH_ORDER[b.toLowerCase()] || 0;
+          return orderB - orderA; // Descending: April, March, Feb, Jan
+        })
+        .map(([month, voyages]) => ({ month, voyages })),
     }));
 }
 
@@ -57,6 +71,7 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
   const [showNavireModal, setShowNavireModal] = useState(false);
   const [showVoyageModal, setShowVoyageModal] = useState(false);
   const [showAddBlModal, setShowAddBlModal] = useState(false);
+  const [showPreBlModal, setShowPreBlModal] = useState(false);
   const [voyages, setVoyages] = useState<VoyageItem[]>([]);
   const [openYears, setOpenYears] = useState<Record<string, boolean>>({});
   const [openMonths, setOpenMonths] = useState<Record<string, boolean>>({});
@@ -68,7 +83,7 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
   }, []);
 
   const fetchVoyages = async () => {
-    const res = await fetch("/api/voyages");
+    const res = await fetchSync("/api/voyages");
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data)) setVoyages(data);
@@ -84,7 +99,7 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
 
   return (
     <>
-      <aside className="fixed left-0 top-0 h-screen w-72 bg-white/40 backdrop-blur-xl border-r border-white/40 z-50 flex flex-col p-6 shadow-2xl shadow-blue-500/5 overflow-hidden">
+      <aside className="h-full w-72 bg-brand-card/40 backdrop-blur-xl border-r border-white/40 z-50 flex flex-col p-4 md:p-6 shadow-2xl shadow-blue-500/5 overflow-hidden">
         {/* Logo */}
         <div className="flex items-center gap-3 mb-10 px-2 flex-shrink-0">
           <div className="bg-primary p-2.5 rounded-2xl shadow-lg shadow-primary/20 ring-4 ring-primary/5">
@@ -118,7 +133,7 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
 
           <button
             onClick={() => setShowNavireModal(true)}
-            className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl text-gray-600 font-bold hover:bg-white hover:text-primary transition-all border border-transparent hover:border-gray-100 hover:shadow-xl hover:shadow-gray-200/50 group"
+            className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl text-white font-bold hover:bg-white/10 hover:text-white transition-all border border-transparent group"
           >
             <Ship className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
             Créer Navire
@@ -126,7 +141,7 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
 
           <button
             onClick={() => setShowVoyageModal(true)}
-            className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl text-gray-600 font-bold hover:bg-white hover:text-primary transition-all border border-transparent hover:border-gray-100 hover:shadow-xl hover:shadow-gray-200/50 group"
+            className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl text-white font-bold hover:bg-white/10 hover:text-white transition-all border border-transparent group"
           >
             <CalendarPlus className="w-5 h-5 text-orange-400 group-hover:scale-110 transition-transform" />
             Créer Voyage
@@ -134,10 +149,18 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
 
           <button
             onClick={() => setShowAddBlModal(true)}
-            className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl text-gray-600 font-bold hover:bg-white hover:text-primary transition-all border border-transparent hover:border-gray-100 hover:shadow-xl hover:shadow-gray-200/50 group"
+            className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl text-white font-bold hover:bg-white/10 hover:text-white transition-all border border-transparent group"
           >
             <FilePlus className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
             Ajouter Bls
+          </button>
+
+          <button
+            onClick={() => setShowPreBlModal(true)}
+            className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl text-white font-bold hover:bg-white/10 hover:text-white transition-all border border-transparent group"
+          >
+            <ClipboardList className="w-5 h-5 text-indigo-400 group-hover:scale-110 transition-transform" />
+            Pré-Saisie Notes
           </button>
 
           {/* Historique Navire */}
@@ -154,7 +177,7 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
                   {/* Year node */}
                   <button
                     onClick={() => toggleYear(year)}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-white/70 transition-all text-gray-700 font-bold text-sm group"
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-brand-card/70 transition-all text-brand-text font-bold text-sm group"
                   >
                     {openYears[year]
                       ? <ChevronDown className="w-4 h-4 text-primary flex-shrink-0 transition-transform" />
@@ -164,7 +187,7 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
                   </button>
 
                   {openYears[year] && (
-                    <div className="ml-4 border-l border-gray-100 pl-3 space-y-0.5">
+                    <div className="ml-4 border-l border-brand-border pl-3 space-y-0.5">
                       {months.map(({ month, voyages: mvoyages }) => {
                         const monthKey = `${year}-${month}`;
                         return (
@@ -172,19 +195,19 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
                             {/* Month node */}
                             <button
                               onClick={() => toggleMonth(monthKey)}
-                              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/70 transition-all text-gray-600 font-semibold text-xs capitalize group"
+                              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/10 transition-all text-white font-semibold text-xs capitalize group"
                             >
                               {openMonths[monthKey]
                                 ? <ChevronDown className="w-3.5 h-3.5 text-primary flex-shrink-0" />
                                 : <ChevronRight className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />}
                               <span>{month}</span>
-                              <span className="ml-auto bg-blue-100 text-blue-600 text-[9px] font-black px-1.5 py-0.5 rounded-full">
+                              <span className="ml-auto bg-blue-100 text-blue-400 text-[9px] font-black px-1.5 py-0.5 rounded-full">
                                 {mvoyages.length}
                               </span>
                             </button>
 
                             {openMonths[monthKey] && (
-                              <div className="ml-4 border-l border-gray-100 pl-2 space-y-0.5 pb-1">
+                              <div className="ml-4 border-l border-brand-border pl-2 space-y-0.5 pb-1">
                                 {mvoyages.map((v) => (
                                   <button
                                     key={v.id}
@@ -193,18 +216,18 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
                                         new CustomEvent("filter-voyage", { detail: { id: v.id } })
                                       );
                                     }}
-                                    className="w-full flex flex-col gap-0.5 px-2 py-2 rounded-lg hover:bg-blue-50 transition-all text-left group"
+                                    className="w-full flex flex-col gap-0.5 px-2 py-2 rounded-lg hover:bg-brand-surface transition-all text-left group"
                                   >
                                     <div className="flex items-center gap-2">
                                       <Circle className="w-1.5 h-1.5 text-blue-400 flex-shrink-0 group-hover:text-primary transition-colors" fill="currentColor" />
-                                      <span className="font-bold text-[11px] text-gray-700 truncate group-hover:text-primary transition-colors">
+                                      <span className="font-bold text-[11px] text-brand-text truncate group-hover:text-primary transition-colors">
                                         {v.navire?.nom ?? "—"} <span className="font-mono text-gray-400">·</span> {v.numero}
                                       </span>
                                     </div>
-                                    <div className="ml-3.5 flex flex-wrap gap-x-2 gap-y-0.5 items-center text-[9px] text-gray-500 whitespace-nowrap overflow-hidden">
-                                      <span className="flex-shrink-0">ETA <span className="font-bold text-gray-700">{formatShort(v.eta)}</span></span>
-                                      <span className="text-gray-300 flex-shrink-0">|</span>
-                                      <span className="flex-shrink-0">ETD <span className="font-bold text-gray-700">{formatShort(v.etd)}</span></span>
+                                    <div className="ml-3.5 flex flex-wrap gap-x-2 gap-y-0.5 items-center text-[9px] text-brand-text-muted whitespace-nowrap overflow-hidden">
+                                      <span className="flex-shrink-0 text-orange-400 font-semibold">ETA <span className="font-bold text-white">{formatShort(v.eta)}</span></span>
+                                      <span className="text-gray-500 flex-shrink-0">|</span>
+                                      <span className="flex-shrink-0 text-orange-400 font-semibold">ETD <span className="font-bold text-white">{formatShort(v.etd)}</span></span>
                                     </div>
                                   </button>
                                 ))}
@@ -223,17 +246,17 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
 
         {/* Footer */}
         <div className="mt-4 space-y-4 flex-shrink-0">
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 font-medium hover:text-gray-600 transition-all text-sm">
+          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 font-medium hover:text-brand-text-dim transition-all text-sm">
             <Settings className="w-4 h-4" />
             Paramètres
           </button>
 
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-3xl border border-blue-100/50 relative overflow-hidden group">
             <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-blue-100 rounded-full blur-2xl opacity-50 group-hover:scale-150 transition-transform duration-700" />
-            <p className="text-xs font-bold text-blue-600 relative z-10">Status Serveur</p>
+            <p className="text-xs font-bold text-blue-400 relative z-10">Status Serveur</p>
             <div className="flex items-center gap-2 mt-2 relative z-10">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-sm shadow-green-500" />
-              <span className="text-[10px] font-bold text-blue-900/60 uppercase tracking-wider">Connecté (Cloud)</span>
+              <span className="text-[10px] font-bold text-blue-400/60 uppercase tracking-wider">Connecté (Cloud)</span>
             </div>
           </div>
         </div>
@@ -242,6 +265,7 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
       {showNavireModal && <NavireModal onClose={() => setShowNavireModal(false)} onSuccess={onRefresh} />}
       {showVoyageModal && <VoyageModal onClose={() => setShowVoyageModal(false)} onSuccess={onRefresh} />}
       {showAddBlModal && <AddBlModal onClose={() => setShowAddBlModal(false)} onSuccess={onRefresh} />}
+      {showPreBlModal && <PreBlModal onClose={() => setShowPreBlModal(false)} onSuccess={onRefresh} />}
     </>
   );
 }

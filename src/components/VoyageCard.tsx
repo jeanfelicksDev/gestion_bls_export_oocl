@@ -8,6 +8,7 @@ import JSZip from "jszip";
 import BillingModal from "./BillingModal";
 import StatusBadge from "./StatusBadge";
 import { calculateWorkingDays } from "@/lib/utils";
+import { fetchSync } from "@/lib/fetchSync";
 
 interface BL {
   id: string;
@@ -15,6 +16,7 @@ interface BL {
   pod: string;
   shipper: string;
   statut: string;
+  statutFret?: string | null;
   typeConnaissement: string;
   dateRetrait: string | null;
   autresCharges?: {
@@ -37,6 +39,7 @@ interface BL {
   isNNG?: boolean;
   isSWB?: boolean;
   isScanne?: boolean;
+  isNoteTraitee?: boolean;
 }
 
 interface Voyage {
@@ -91,7 +94,7 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
       await Promise.all(
         downloadTasks.map(async (task) => {
           try {
-            const res = await fetch(task.url);
+            const res = await fetchSync(task.url);
             const arrayBuffer = await res.arrayBuffer();
             
             const { PDFDocument } = await import("pdf-lib");
@@ -115,7 +118,7 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
             console.error(`Erreur sur ${task.name}:`, err);
             // En cas d'erreur, on essaie quand même d'ajouter le fichier original
             try {
-              const res = await fetch(task.url);
+              const res = await fetchSync(task.url);
               const blob = await res.blob();
               zip.file(task.name, blob);
             } catch (e) {
@@ -141,7 +144,7 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
   const confirmETD = async () => {
     setIsUpdating(true);
     try {
-      const res = await fetch(`/api/voyages/${voyage.id}`, {
+      const res = await fetchSync(`/api/voyages/${voyage.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ etdConfirmed: true }),
@@ -174,26 +177,32 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
       const days = calculateWorkingDays(voyage.etd, null);
       return days !== null && days > 15;
     });
+  } else if (viewMode === "unrated") {
+    displayedBLs = displayedBLs.filter(bl => bl.statutFret?.toLowerCase() === "unrated" || bl.statut?.toLowerCase() === "unrated");
+  } else if (viewMode === "no-freight") {
+    displayedBLs = displayedBLs.filter(bl => (!bl.statutFret || bl.statutFret.trim() === "") && bl.statut?.toLowerCase() !== "unrated");
+  } else if (viewMode === "with-notes") {
+    displayedBLs = displayedBLs.filter(bl => bl.commentaire && bl.commentaire.trim() !== "" && !bl.isNoteTraitee);
   }
 
   return (
     <div className="glass rounded-3xl overflow-hidden mb-8 border border-white/40 shadow-xl">
-      <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 text-black border-b border-blue-200/50">
+      <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 md:p-6 text-black border-b border-blue-200/50">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-4">
             <div className="bg-blue-600/10 p-3 rounded-2xl">
-              <Ship className="w-6 h-6 text-blue-600" />
+              <Ship className="w-6 h-6 text-blue-400" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-bold">{voyage.navire?.nom || "N/A"}</h2>
                 {voyage.navire?.coque && (
-                  <span className="bg-blue-600/10 px-2 py-0.5 rounded-md text-[10px] uppercase tracking-tighter font-black border border-blue-600/20 text-blue-700">
+                  <span className="bg-blue-600/10 px-2 py-0.5 rounded-md text-[10px] uppercase tracking-tighter font-black border border-blue-600/20 text-blue-400">
                     {voyage.navire.coque.nom}
                   </span>
                 )}
               </div>
-              <p className="text-gray-600 flex items-center gap-2 text-sm">
+              <p className="text-slate-700-dim flex items-center gap-2 text-sm">
                 Voyage: <span className="font-mono bg-blue-600/5 px-2 py-0.5 rounded font-bold text-gray-900">{voyage.numero}</span>
               </p>
             </div>
@@ -202,11 +211,11 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
           <div className="flex items-center gap-4">
             <div className="flex gap-2 text-sm">
               <div className="bg-white/50 px-3 py-1.5 rounded-xl border border-blue-200/50 flex items-center gap-2 whitespace-nowrap">
-                <span className="text-gray-500 text-[10px] uppercase font-bold tracking-wider">ETA</span>
+                <span className="text-slate-700-muted text-[10px] uppercase font-bold tracking-wider">ETA</span>
                 <span className="font-bold text-sm">{voyage.eta ? format(new Date(voyage.eta), "d MMM yy", { locale: fr }) : "-"}</span>
               </div>
               <div className="bg-white/50 px-3 py-1.5 rounded-xl border border-blue-200/50 flex items-center gap-2 whitespace-nowrap">
-                <span className="text-gray-500 text-[10px] uppercase font-bold tracking-wider">ETD</span>
+                <span className="text-slate-700-muted text-[10px] uppercase font-bold tracking-wider">ETD</span>
                 <span className="font-bold text-sm">{voyage.etd ? format(new Date(voyage.etd), "d MMM yy", { locale: fr }) : "-"}</span>
               </div>
             </div>
@@ -218,7 +227,7 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all font-bold text-sm shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
                     uploadedCount > 0 
                       ? "bg-indigo-600 text-white shadow-indigo-600/20 hover:bg-indigo-700" 
-                      : "bg-gray-100 text-gray-400 border border-gray-200 shadow-none"
+                      : "bg-gray-100 text-gray-400 border border-slate-200 shadow-none"
                   }`}
                   title="Télécharger tous les BLs (ZIP)"
                 >
@@ -248,7 +257,7 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all font-bold text-sm shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
                     uploadedCount > 0 
                       ? "bg-indigo-600 text-white shadow-indigo-600/20 hover:bg-indigo-700" 
-                      : "bg-gray-100 text-gray-400 border border-gray-200 shadow-none"
+                      : "bg-gray-100 text-gray-400 border border-slate-200 shadow-none"
                   }`}
                   title="Télécharger tous les BLs (ZIP)"
                 >
@@ -289,9 +298,9 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
 
       {showBLs && (
         <div className="p-0 overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full min-w-[800px] text-left border-collapse whitespace-nowrap">
             <thead>
-              <tr className="bg-gray-50/50 text-gray-500 text-xs uppercase tracking-wider font-bold">
+              <tr className="bg-brand-bg/50 text-slate-700-muted text-xs uppercase tracking-wider font-bold">
                 <th className="px-6 py-4">Booking</th>
                 <th className="px-6 py-4">Shipper</th>
                 <th className="px-6 py-4">Statut</th>
@@ -305,8 +314,8 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
                 const days = voyage.etdConfirmed ? calculateWorkingDays(voyage.etd, bl.dateRetrait) : null;
                 
                 return (
-                  <tr key={bl.id} className="hover:bg-blue-50/30 transition-colors">
-                    <td className="px-6 py-4 font-mono font-bold text-gray-700 text-base">
+                  <tr key={bl.id} className="hover:bg-slate-50/30 transition-colors">
+                    <td className="px-6 py-4 font-mono font-bold text-slate-700 text-base">
                       <div className="flex items-center gap-2">
                         {bl.booking}
                         {bl.raisonRetour && (
@@ -315,20 +324,20 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
                           </span>
                         )}
                         {bl.autresCharges && bl.autresCharges.length > 0 && (
-                          <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded text-[10px] font-bold border border-blue-100" title={`${bl.autresCharges.length} charge(s) additionnelle(s)`}>
+                          <span className="inline-flex items-center gap-1 bg-slate-50 text-blue-400 px-1.5 py-0.5 rounded text-[10px] font-bold border border-blue-100" title={`${bl.autresCharges.length} charge(s) additionnelle(s)`}>
                             <Receipt className="w-3 h-3" />
                             {bl.autresCharges.length}
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-800 font-bold max-w-[200px] truncate">{bl.shipper}</td>
+                    <td className="px-6 py-4 text-sm text-slate-700 font-bold max-w-[200px] truncate">{bl.shipper}</td>
                     <td className="px-6 py-4">
                       <StatusBadge status={bl.dateRetrait ? "RETIRE" : "EN ATTENTE RETRAIT"} />
                     </td>
                     <td className="px-6 py-4 text-sm font-medium">
                       {bl.dateRetrait ? (
-                        <span className="text-gray-700">{format(new Date(bl.dateRetrait), "dd/MM/yyyy")}</span>
+                        <span className="text-slate-700">{format(new Date(bl.dateRetrait), "dd/MM/yyyy")}</span>
                       ) : (
                         <span className="text-gray-400 italic">En attente</span>
                       )}
@@ -355,7 +364,7 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
                           
                           return (
                             <div 
-                              className={`p-1.5 rounded-lg border ${hasDocs ? "bg-emerald-50 border-emerald-100 text-emerald-600" : "bg-gray-50 border-gray-100 text-gray-300"}`}
+                              className={`p-1.5 rounded-lg border ${hasDocs ? "bg-emerald-50 border-emerald-100 text-emerald-600" : "bg-brand-bg border-slate-100 text-gray-300"}`}
                               title={hasDocs ? "Documents complets" : "Documents manquants"}
                             >
                               <FileText className="w-3.5 h-3.5" />
@@ -365,7 +374,7 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
 
                         {/* Scanned Folder Status */}
                         <div 
-                          className={`p-1.5 rounded-lg border ${bl.urlScanne ? "bg-blue-50 border-blue-100 text-blue-600" : "bg-gray-50 border-gray-100 text-gray-300"}`}
+                          className={`p-1.5 rounded-lg border ${bl.urlScanne ? "bg-slate-50 border-blue-100 text-blue-400" : "bg-brand-bg border-slate-100 text-gray-300"}`}
                           title={bl.urlScanne ? "Dossier scanné présent" : "Dossier scanné manquant"}
                         >
                           <CloudUpload className="w-3.5 h-3.5" />

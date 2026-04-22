@@ -32,6 +32,7 @@ model Voyage {
   eta       DateTime?
   etd       DateTime?
   etdConfirmed Boolean @default(false)
+  tauxDollar    String?
   bls       BL[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -71,8 +72,8 @@ model BL {
   urlScanne          String?
   isNoteTraitee      Boolean   @default(false)
 
-  voyageId           String
-  voyage             Voyage    @relation(fields: [voyageId], references: [id], onDelete: Cascade)
+  voyageId           String?
+  voyage             Voyage?   @relation(fields: [voyageId], references: [id], onDelete: Cascade)
   autresCharges      AutreCharge[]
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt

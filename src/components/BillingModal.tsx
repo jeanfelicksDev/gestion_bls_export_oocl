@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { X, FileDown, Eye, EyeOff, DollarSign, Ship, Calendar, Loader2, AlertCircle } from "lucide-react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { X, FileDown, Eye, EyeOff, DollarSign, Ship, Calendar, Loader2, AlertCircle, Save, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatAmount, unformatAmount } from "@/lib/utils";
+import { fetchSync } from "@/lib/fetchSync";
 
 interface BillingModalProps {
   voyage: any;
@@ -19,9 +20,45 @@ const CHARGES_BLUE = [218, 230, 248] as [number, number, number]; // En-tête so
 const ROW_ALT = [249, 250, 252] as [number, number, number];      // Lignes alternées
 
 export default function BillingModal({ voyage, onClose }: BillingModalProps) {
-  const [tauxDollar, setTauxDollar] = useState("600 XOF");
+  const [tauxDollar, setTauxDollar] = useState(voyage.tauxDollar || "600 XOF");
   const [isGenerating, setIsGenerating] = useState(false);
   const [showError, setShowError] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sauvegarde automatique (Debounce)
+  useEffect(() => {
+    if (tauxDollar === voyage.tauxDollar) return;
+
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
+    setSaveStatus("saving");
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        const res = await fetchSync(`/api/voyages/${voyage.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tauxDollar }),
+        });
+        if (res.ok) {
+          setSaveStatus("saved");
+          setTimeout(() => setSaveStatus("idle"), 2000);
+          // Mettre à jour l'objet voyage local si nécessaire (optionnel car le parent rafraîchira au besoin)
+          voyage.tauxDollar = tauxDollar;
+        } else {
+          setSaveStatus("error");
+        }
+      } catch (err) {
+        console.error("Save error:", err);
+        setSaveStatus("error");
+      }
+    }, 1000);
+
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, [tauxDollar, voyage.id, voyage.tauxDollar]);
 
   const hasUSD = useMemo(() => {
     return voyage.bls.some((bl: any) => {
@@ -139,7 +176,7 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(19);
       doc.setTextColor(...OOCL_RED);
-      doc.text(tauxDollar, col3x, y + 9);
+      doc.text(formatAmount(tauxDollar), col3x, y + 9);
 
       // Ligne de séparation
       y += 22;
@@ -228,7 +265,7 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
           cellWidth: finalChargeWidths[i],
           halign: "center",
           fontStyle: "bold",
-          fontSize: 13,
+          fontSize: 10,
         };
       });
 
@@ -242,17 +279,13 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
             row.push("X");
           } else {
             const charge = bl.autresCharges?.find((c: any) => c.type === col);
-            row.push(charge?.montant || "");
+            row.push(formatAmount(charge?.montant) || "");
           }
         });
         return row;
       });
 
-      // Compléter jusqu'à 15 lignes minimum
-      const minRows = 15;
-      while (body.length < minRows) {
-        body.push(["", "", ...activeColumns.map(() => "")]);
-      }
+      // On ne rajoute plus de lignes vides (à la demande de l'utilisateur)
 
       // ════════════════════════════════════════════════════════
       //  AUTOMAP — DOUBLE EN-TÊTE GROUPÉ
@@ -296,14 +329,14 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
         margin: { left: margin, right: margin },
         // Styles généraux
         styles: {
-          fontSize: 13,
-          cellPadding: { top: 4, bottom: 4, left: 3, right: 3 },
+          fontSize: 10,
+          cellPadding: { top: 3, bottom: 3, left: 2, right: 2 },
           lineWidth: 0.25,
           lineColor: [210, 218, 230] as [number, number, number],
           textColor: [30, 30, 40] as [number, number, number],
           font: "helvetica",
           overflow: "linebreak",
-          minCellHeight: 8,
+          minCellHeight: 6,
         },
         headStyles: {
           fillColor: LIGHT_BLUE,
@@ -361,17 +394,17 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-[2rem] w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-white/20">
+      <div className="bg-brand-card rounded-[2rem] w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-white/20">
 
         {/* ── Header ── */}
-        <div className="p-8 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white flex justify-between items-center flex-shrink-0">
-          <div className="flex items-center gap-6">
+        <div className="p-4 md:p-8 border-b border-brand-border bg-gradient-to-r from-gray-50 to-white flex justify-between items-center flex-shrink-0">
+          <div className="flex items-center gap-4 md:p-6">
             <div className="bg-primary/10 p-4 rounded-2xl">
               <Ship className="w-8 h-8 text-primary" />
             </div>
             <div>
               <h2 className="text-2xl font-black text-gray-900 tracking-tight">Tableau de Facturation</h2>
-              <div className="flex items-center gap-4 mt-1 text-gray-500 font-medium">
+              <div className="flex items-center gap-4 mt-1 text-brand-text-muted font-medium">
                 <span className="flex items-center gap-2 text-sm"><Ship className="w-4 h-4" /> {voyage.navire?.nom} {voyage.numero}</span>
                 <span className="flex items-center gap-2 text-sm"><Calendar className="w-4 h-4" /> ETD : {voyage.etd ? format(new Date(voyage.etd), "dd/MM/yyyy") : "-"}</span>
               </div>
@@ -383,16 +416,33 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
         </div>
 
         {/* ── Controls ── */}
-        <div className="px-8 py-5 bg-gray-50/70 border-b border-gray-100 flex-shrink-0">
-          <div className="flex flex-wrap items-end gap-8">
+        <div className="px-8 py-5 bg-brand-bg/70 border-b border-brand-border flex-shrink-0">
+          <div className="flex flex-wrap items-end gap-4 md:p-8">
             {/* Taux dollar */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                <DollarSign className="w-3 h-3" /> Taux du Dollar
-              </label>
+            <div className="space-y-1.5 relative">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <DollarSign className="w-3 h-3" /> Taux du Dollar
+                </label>
+                {saveStatus === "saving" && (
+                  <span className="flex items-center gap-1 text-[9px] font-bold text-amber-500 animate-pulse">
+                    <Loader2 className="w-2.5 h-2.5 animate-spin" /> Sauvegarde...
+                  </span>
+                )}
+                {saveStatus === "saved" && (
+                  <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-500">
+                    <CheckCircle2 className="w-2.5 h-2.5" /> Enregistré
+                  </span>
+                )}
+                {saveStatus === "error" && (
+                  <span className="flex items-center gap-1 text-[9px] font-bold text-red-500">
+                    <AlertCircle className="w-2.5 h-2.5" /> Erreur
+                  </span>
+                )}
+              </div>
               <input
                 type="text"
-                className="px-6 py-3 rounded-2xl border-2 border-gray-100 focus:border-primary focus:ring-8 focus:ring-primary/5 outline-none font-black text-red-600 bg-white w-48 text-base shadow-sm transition-all"
+                className="px-6 py-3 rounded-2xl border-2 border-brand-border focus:border-primary focus:ring-8 focus:ring-primary/5 outline-none font-black text-red-600 bg-brand-card w-48 text-base shadow-sm transition-all"
                 value={formatAmount(tauxDollar)}
                 onChange={(e) => setTauxDollar(unformatAmount(e.target.value))}
                 placeholder="Ex: 600 XOF"
@@ -410,7 +460,7 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
                       visibleColumns[col]
                         ? "bg-primary/10 border-primary/20 text-primary"
-                        : "bg-white border-gray-200 text-gray-400"
+                        : "bg-brand-card border-brand-border-highlight text-gray-400"
                     }`}
                   >
                     {visibleColumns[col] ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
@@ -435,7 +485,7 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
         </div>
 
         {/* ── Aperçu tableau ── */}
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-auto p-4 md:p-6">
           <p className="text-[11px] text-gray-400 mb-3 font-medium italic">
             Aperçu — format A4 paysage avec colonnes charges réduites
           </p>
@@ -458,7 +508,7 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
                   </>
                 )}
                 {activeColumns.map(col => (
-                  <th key={col} className="border border-blue-200/60 px-2 py-2 text-center text-[10px] font-black text-blue-700 uppercase bg-[#DAE6F8] whitespace-nowrap">
+                  <th key={col} className="border border-blue-200/60 px-2 py-2 text-center text-[10px] font-black text-blue-400 uppercase bg-[#DAE6F8] whitespace-nowrap">
                     {col}
                   </th>
                 ))}
@@ -466,9 +516,9 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
             </thead>
             <tbody>
               {voyage.bls.map((bl: any, i: number) => (
-                <tr key={bl.id} className={i % 2 === 0 ? "bg-white" : "bg-[#F9FAFC]"}>
-                  <td className="border border-blue-100 px-4 py-3 font-mono font-bold text-gray-800 text-sm whitespace-nowrap">OOLU{bl.booking}</td>
-                  <td className="border border-blue-100 px-4 py-3 text-gray-600 text-sm truncate max-w-xs">{bl.shipper || "-"}</td>
+                <tr key={bl.id} className={i % 2 === 0 ? "bg-brand-card" : "bg-[#F9FAFC]"}>
+                  <td className="border border-blue-100 px-4 py-3 font-mono font-bold text-brand-text text-[11px] whitespace-nowrap">OOLU{bl.booking}</td>
+                  <td className="border border-blue-100 px-4 py-3 text-brand-text-dim text-[11px] truncate max-w-xs">{bl.shipper || "-"}</td>
                   {activeColumns.map(col => {
                     let val = "";
                     if (col === "Taxe de Port") val = "X";
@@ -477,7 +527,7 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
                       val = formatAmount(charge?.montant) || "";
                     }
                     return (
-                      <td key={col} className="border border-blue-100 px-2 py-3 text-center font-bold text-blue-700 text-sm whitespace-nowrap">
+                      <td key={col} className="border border-blue-100 px-2 py-3 text-center font-bold text-blue-400 text-[11px] whitespace-nowrap">
                         {val}
                       </td>
                     );
@@ -492,14 +542,14 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
       {/* Modal d'erreur Taux Dollar */}
       {showError && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-red-50 animate-in zoom-in-95 duration-200">
-            <div className="flex flex-col items-center text-center gap-6">
+          <div className="bg-brand-card rounded-[2.5rem] p-4 md:p-8 max-w-md w-full shadow-2xl border border-red-50 animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center gap-4 md:p-6">
               <div className="bg-red-50 p-5 rounded-full ring-8 ring-red-50/50">
                 <AlertCircle className="w-12 h-12 text-red-500" />
               </div>
               <div>
                 <h3 className="text-xl font-black text-gray-900 mb-2 font-mono">TAUX DOLLAR REQUIS</h3>
-                <p className="text-gray-500 text-sm font-bold leading-relaxed">
+                <p className="text-brand-text-muted text-sm font-bold leading-relaxed">
                   Certains BLs de ce voyage ont un fret exprimé en <span className="text-red-500 font-black">USD</span>.<br/> 
                   Le champ <span className="text-primary font-black uppercase">"Taux du Dollar"</span> doit obligatoirement être renseigné pour convertir ces montants dans le PDF.
                 </p>
@@ -507,7 +557,7 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
               <button 
                 type="button"
                 onClick={() => setShowError(false)}
-                className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-800 transition-all active:scale-95 shadow-xl shadow-slate-200"
+                className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-800 transition-all active:scale-95 shadow-xl shadow-black/50"
               >
                 Compris, je vais le renseigner
               </button>

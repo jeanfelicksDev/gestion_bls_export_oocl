@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Save, Calendar, Hash, Ship, Layers, Trash2, Upload, Edit2 } from "lucide-react";
+import { X, Save, Calendar, Hash, Ship, Layers, Trash2, Upload, Edit2, DollarSign } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { formatAmount, unformatAmount } from "@/lib/utils";
 import BLUploadModal from "./BLUploadModal";
+import { fetchSync } from "@/lib/fetchSync";
 
 interface Navire {
   id: string;
@@ -18,6 +20,7 @@ interface Voyage {
   numero: string;
   eta: string | null;
   etd: string | null;
+  tauxDollar: string | null;
   bls: { id: string }[];
 }
 
@@ -34,10 +37,11 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
   const [numero, setNumero] = useState("");
   const [eta, setEta] = useState("");
   const [etd, setEtd] = useState("");
+  const [tauxDollar, setTauxDollar] = useState("600 XOF");
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    fetch("/api/navires").then(res => res.json()).then(data => Array.isArray(data) && setNavires(data));
+    fetchSync("/api/navires").then(res => res.json()).then(data => Array.isArray(data) && setNavires(data));
     fetchVoyages();
   }, []);
 
@@ -47,6 +51,7 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
     setNavireId("");
     setEta("");
     setEtd("");
+    setTauxDollar("600 XOF");
   };
 
   const handleEdit = (v: Voyage) => {
@@ -55,10 +60,11 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
     setNumero(v.numero);
     setEta(v.eta ? format(new Date(v.eta), "yyyy-MM-dd") : "");
     setEtd(v.etd ? format(new Date(v.etd), "yyyy-MM-dd") : "");
+    setTauxDollar(v.tauxDollar || "600 XOF");
   };
 
   const fetchVoyages = async () => {
-    const res = await fetch("/api/voyages");
+    const res = await fetchSync("/api/voyages");
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data)) setVoyages(data);
@@ -68,7 +74,7 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Supprimer ce voyage ?")) return;
-    const res = await fetch(`/api/voyages/${id}`, { method: "DELETE" });
+    const res = await fetchSync(`/api/voyages/${id}`, { method: "DELETE" });
     if (res.ok) {
       await fetchVoyages();
       onSuccess();
@@ -83,7 +89,7 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
       const url = editingVoyage ? `/api/voyages/${editingVoyage.id}` : "/api/voyages";
       const method = editingVoyage ? "PATCH" : "POST";
       
-      const res = await fetch(url, {
+      const res = await fetchSync(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -92,6 +98,7 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
           numero,
           eta,
           etd,
+          tauxDollar,
         }),
       });
       if (res.ok) {
@@ -111,28 +118,28 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+      <div className="bg-brand-card rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="bg-primary p-6 text-white flex justify-between items-center flex-shrink-0">
+        <div className="bg-primary p-4 md:p-6 text-white flex justify-between items-center flex-shrink-0">
           <div className="flex items-center gap-3">
             <Calendar className="w-6 h-6" />
             <h2 className="text-xl font-bold">{editingVoyage ? "Modifier le Voyage" : "Créer un Voyage"}</h2>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-brand-card/10 rounded-full transition-colors">
             <X className="w-6 h-6" />
           </button>
         </div>
 
         <div className="overflow-y-auto flex-1">
           {/* Form */}
-          <form onSubmit={handleSubmit} className="p-8 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form onSubmit={handleSubmit} className="p-4 md:p-8 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:p-6">
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
                   <Ship className="w-3 h-3" /> Navire
                 </label>
                 <select
-                  className={`w-full px-4 py-3 rounded-xl border border-gray-100 ${navireId ? "bg-green-50" : "bg-gray-50"} focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium`}
+                  className={`w-full px-4 py-3 rounded-xl border border-brand-border ${navireId ? "bg-green-50" : "bg-brand-bg"} focus:bg-brand-card focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium`}
                   value={navireId}
                   onChange={(e) => setNavireId(e.target.value)}
                   required
@@ -151,7 +158,7 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
                   <Hash className="w-3 h-3" /> N° Voyage
                 </label>
                 <input
-                  className={`w-full px-4 py-3 rounded-xl border border-gray-100 ${numero ? "bg-green-50" : "bg-gray-50"} focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium`}
+                  className={`w-full px-4 py-3 rounded-xl border border-brand-border ${numero ? "bg-green-50" : "bg-brand-bg"} focus:bg-brand-card focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium`}
                   placeholder="Ex: 024E"
                   value={numero}
                   onChange={(e) => setNumero(e.target.value)}
@@ -165,7 +172,7 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
                 </label>
                 <input
                   type="date"
-                  className={`w-full px-4 py-3 rounded-xl border border-gray-100 ${eta ? "bg-green-50" : "bg-gray-50"} focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium`}
+                  className={`w-full px-4 py-3 rounded-xl border border-brand-border ${eta ? "bg-green-50" : "bg-brand-bg"} focus:bg-brand-card focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium`}
                   value={eta}
                   onChange={(e) => setEta(e.target.value)}
                   required
@@ -178,9 +185,22 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
                 </label>
                 <input
                   type="date"
-                  className={`w-full px-4 py-3 rounded-xl border border-gray-100 ${etd ? "bg-green-50" : "bg-gray-50"} focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium`}
+                  className={`w-full px-4 py-3 rounded-xl border border-brand-border ${etd ? "bg-green-50" : "bg-brand-bg"} focus:bg-brand-card focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium`}
                   value={etd}
                   onChange={(e) => setEtd(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                  <DollarSign className="w-3 h-3" /> Taux du Dollar
+                </label>
+                <input
+                  className={`w-full px-4 py-3 rounded-xl border border-brand-border ${tauxDollar ? "bg-red-50/30" : "bg-brand-bg"} focus:bg-brand-card focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-black text-red-600`}
+                  placeholder="Ex: 600 XOF"
+                  value={formatAmount(tauxDollar)}
+                  onChange={(e) => setTauxDollar(unformatAmount(e.target.value))}
                   required
                 />
               </div>
@@ -190,7 +210,7 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
               <button
                 type="button"
                 onClick={editingVoyage ? resetForm : onClose}
-                className="flex-1 px-6 py-3 rounded-xl border border-gray-200 font-bold text-gray-500 hover:bg-gray-50 transition-all"
+                className="flex-1 px-6 py-3 rounded-xl border border-brand-border-highlight font-bold text-brand-text-muted hover:bg-brand-bg transition-all"
               >
                 {editingVoyage ? "Annuler" : "Fermer"}
               </button>
@@ -209,7 +229,7 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
           <div className="px-8 pb-8">
             <div className="flex items-center gap-2 mb-4">
               <Layers className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider">
+              <h3 className="text-sm font-bold text-brand-text-muted uppercase tracking-wider">
                 Voyages enregistrés
                 <span className="ml-2 bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs font-black">
                   {voyages.length}
@@ -218,14 +238,14 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
             </div>
 
             {voyages.length === 0 ? (
-              <div className="text-center py-8 text-gray-400 text-sm italic bg-gray-50 rounded-2xl">
+              <div className="text-center py-8 text-gray-400 text-sm italic bg-brand-bg rounded-2xl">
                 Aucun voyage enregistré
               </div>
             ) : (
-              <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
+              <div className="rounded-2xl overflow-hidden border border-brand-border shadow-sm">
                 <table className="w-full text-left text-sm">
                   <thead>
-                    <tr className="bg-gray-50 text-gray-400 text-[10px] uppercase tracking-widest font-bold">
+                    <tr className="bg-brand-bg text-gray-400 text-[10px] uppercase tracking-widest font-bold">
                       <th className="px-4 py-3">Navire</th>
                       <th className="px-4 py-3">Coque</th>
                       <th className="px-4 py-3">N° Voyage</th>
@@ -237,22 +257,22 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {voyages.map((v) => (
-                      <tr key={v.id} className="hover:bg-blue-50/30 transition-colors group">
-                        <td className="px-4 py-3 font-semibold text-gray-800">{v.navire?.nom || "—"}</td>
+                      <tr key={v.id} className="hover:bg-brand-surface/30 transition-colors group">
+                        <td className="px-4 py-3 font-semibold text-brand-text">{v.navire?.nom || "—"}</td>
                         <td className="px-4 py-3">
                           {v.navire?.coque ? (
-                            <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase">
+                            <span className="bg-blue-100 text-blue-400 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase">
                               {v.navire.coque.nom}
                             </span>
                           ) : (
                             <span className="text-gray-300">—</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 font-mono text-gray-600">{v.numero}</td>
-                        <td className="px-4 py-3 text-gray-500">{formatDate(v.eta)}</td>
-                        <td className="px-4 py-3 text-gray-500">{formatDate(v.etd)}</td>
+                        <td className="px-4 py-3 font-mono text-brand-text-dim">{v.numero}</td>
+                        <td className="px-4 py-3 text-brand-text-muted">{formatDate(v.eta)}</td>
+                        <td className="px-4 py-3 text-brand-text-muted">{formatDate(v.etd)}</td>
                         <td className="px-4 py-3 text-center">
-                          <span className="bg-gray-100 text-gray-600 font-bold px-2 py-0.5 rounded-full text-xs">
+                          <span className="bg-gray-100 text-brand-text-dim font-bold px-2 py-0.5 rounded-full text-xs">
                             {v.bls?.length ?? 0}
                           </span>
                         </td>

@@ -5,6 +5,7 @@ import { X, Save, Calendar, Tag, FileText, Hash, MessageSquare, Plus, Trash2, Ch
 import { format } from "date-fns";
 import StatusBadge from "./StatusBadge";
 import { formatAmount, unformatAmount } from "@/lib/utils";
+import { fetchSync } from "@/lib/fetchSync";
 
 interface AutreCharge {
   id?: string;
@@ -88,14 +89,14 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
 
   const fetchTypeCharges = async () => {
     try {
-      const res = await fetch("/api/type-charges");
+      const res = await fetchSync("/api/type-charges");
       if (res.ok) setTypeCharges(await res.json());
     } catch (err) { console.error(err); }
   };
 
   const fetchRaisonRetourOptions = async () => {
     try {
-      const res = await fetch("/api/raison-retour");
+      const res = await fetchSync("/api/raison-retour");
       if (res.ok) setRaisonRetourOptions(await res.json());
     } catch (err) { console.error(err); }
   };
@@ -104,7 +105,7 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
     if (!newTypeName.trim()) return;
     setIsCreatingType(true);
     try {
-      const res = await fetch("/api/type-charges", {
+      const res = await fetchSync("/api/type-charges", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nom: newTypeName }),
@@ -153,7 +154,7 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
     setIsUploading(true);
     try {
       const filename = `${formData.booking} ${activeUploadType}.pdf`;
-      const res = await fetch(`/api/bls/upload?filename=${encodeURIComponent(filename)}&blId=${bl.id}&type=${activeUploadType}`, {
+      const res = await fetchSync(`/api/bls/upload?filename=${encodeURIComponent(filename)}&blId=${bl.id}&type=${activeUploadType}`, {
         method: "POST",
         body: file,
       });
@@ -187,7 +188,7 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
     setIsUploading(true);
     setActiveUploadType(type);
     try {
-      const res = await fetch(`/api/bls/upload?blId=${bl.id}&type=${type}&url=${encodeURIComponent(url as string)}`, {
+      const res = await fetchSync(`/api/bls/upload?blId=${bl.id}&type=${type}&url=${encodeURIComponent(url as string)}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -307,12 +308,11 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
         }
       }
 
-      // Validation : Documents obligatoires (Uniquement pour les ETD > 01/04/2026)
-      // Si l'ETD est "moins récent" (antérieur) au 01/04/2026, on ne bloque pas.
-      const etdString = voyage.etd ? voyage.etd.substring(0, 10) : ""; // "YYYY-MM-DD"
+      // Validation : Documents obligatoires (Uniquement pour les dossiers sortis [Date de Retrait] dont l'ETD >= 01/04/2026)
+      const etdString = voyage.etd ? voyage.etd.substring(0, 10) : ""; 
       const threshold = "2026-04-01";
 
-      if (etdString && etdString > threshold) {
+      if (formData.dateRetrait && etdString && etdString >= threshold) {
         if (formData.typeConnaissement === "OBL") {
           if (!formData.urlORG || !formData.urlNNG) {
             alert("Erreur : Pour un OBL (Original), vous devez impérativement téléverser les fichiers ORG et NNG.");
@@ -331,7 +331,7 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
       const url = isNew ? "/api/bls" : `/api/bls/${bl.id}`;
       const method = isNew ? "POST" : "PATCH";
       
-      const res = await fetch(url, {
+      const res = await fetchSync(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -359,19 +359,19 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
     }
   };
 
-  const inputCls = (val: any) => `w-full px-4 py-2 rounded-xl border-2 border-slate-300 ${val ? "bg-slate-50" : "bg-white"} focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all text-sm font-semibold text-slate-700 placeholder:text-slate-300 shadow-sm`;
-  const labelCls = "text-[10px] font-black text-slate-600 uppercase tracking-widest flex items-center gap-2 mb-1.5";
+  const inputCls = (val: any) => `w-full px-4 py-2 rounded-xl border-2 border-brand-border-highlight ${val ? "bg-brand-bg" : "bg-brand-card"} focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all text-sm font-semibold text-brand-text placeholder:text-slate-300 shadow-sm`;
+  const labelCls = "text-[10px] font-black text-brand-text-dim uppercase tracking-widest flex items-center gap-2 mb-1.5";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-white rounded-[2.5rem] w-full max-w-5xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[92vh] flex flex-col border border-white/20">
+      <div className="bg-brand-card rounded-[2.5rem] w-full max-w-5xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[92vh] flex flex-col border border-white/20">
         
         {/* Hidden File Input */}
         <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf" className="hidden" />
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary to-blue-700 p-8 text-white flex justify-between items-center flex-shrink-0 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl" />
+        <div className="bg-gradient-to-r from-primary to-blue-700 p-4 md:p-8 text-white flex justify-between items-center flex-shrink-0 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-brand-card/10 rounded-full -mr-32 -mt-32 blur-3xl" />
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-1">
               <h2 className="text-2xl font-black tracking-tight">{isNew ? "Ajouter un BL" : `Edition BL ${bl.booking}`}</h2>
@@ -384,23 +384,23 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
               )}
             </p>
           </div>
-          <button onClick={onClose} className="p-3 hover:bg-white/10 rounded-full transition-all active:scale-95 relative z-10 border border-white/10">
+          <button onClick={onClose} className="p-3 hover:bg-brand-card/10 rounded-full transition-all active:scale-95 relative z-10 border border-white/10">
             <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Scrollable Form */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-8 space-y-8 bg-slate-50/30">
+        <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-4 md:p-8 space-y-8 bg-brand-bg/30">
           
-          <div className="grid grid-cols-12 gap-8">
+          <div className="grid grid-cols-12 gap-4 md:p-8">
             {/* Left Column */}
             <div className="col-span-12 lg:col-span-7 space-y-6">
               <div className="flex items-center gap-3">
                 <div className="h-8 w-1.5 bg-primary rounded-full" />
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Informations Principal</h3>
+                <h3 className="text-sm font-black text-brand-text uppercase tracking-widest">Informations Principal</h3>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm shadow-slate-200/50">
+              <div className="grid grid-cols-2 gap-4 bg-brand-card p-4 md:p-6 rounded-[2rem] border border-brand-border shadow-sm shadow-black/50/50">
                 <div className={`col-span-2 ${isNew ? "" : "hidden"}`}>
                   <label className={labelCls}><Hash className="w-3 h-3" /> N° Booking</label>
                   <input className={`${inputCls(formData.booking)} text-lg font-mono font-black text-primary`} required={isNew} value={formData.booking} onChange={set("booking")} placeholder="Ex: 4055010790" />
@@ -427,6 +427,7 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
                     <option value="">— Type —</option>
                     <option value="OBL">OBL (Original)</option>
                     <option value="SWB">SWB (Sea Waybill)</option>
+                    <option value="Telex">Télex</option>
                   </select>
                 </div>
 
@@ -450,12 +451,12 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
                               !isDisabled
                                 ? isActive
                                   ? type === "SWB" ? "bg-emerald-600 border-emerald-600 text-white" : type === "NNG" ? "bg-indigo-600 border-indigo-600 text-white" : "bg-slate-800 border-slate-800 text-white"
-                                  : "bg-white border-slate-100 text-slate-500 hover:border-slate-200"
-                                : "bg-slate-50 border-slate-50 text-slate-200 cursor-not-allowed"
+                                  : "bg-brand-card border-brand-border text-brand-text-muted hover:border-brand-border-highlight"
+                                : "bg-brand-bg border-slate-50 text-slate-200 cursor-not-allowed"
                             }`}
                           >
                             <span className="flex-1 text-center">{type}</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${hasUrl ? "bg-white/20 text-white" : "bg-slate-100 text-slate-400"}`}>
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${hasUrl ? "bg-brand-card/20 text-white" : "bg-brand-surface text-brand-text-muted"}`}>
                               {hasUrl ? "1" : "0"}
                             </span>
                           </button>
@@ -498,11 +499,11 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
                         type="button"
                         onClick={() => handleToggleAndOpen("SCANNE")}
                         className={`w-full py-3 rounded-xl font-black text-[11px] transition-all border-2 flex items-center justify-between px-6 gap-2 ${
-                          formData.isScanne ? "bg-blue-600 border-blue-600 text-white shadow-lg" : "bg-white border-blue-100 text-blue-600"
+                          formData.isScanne ? "bg-blue-600 border-blue-600 text-white shadow-lg" : "bg-brand-card border-blue-100 text-blue-400"
                         }`}
                       >
                          <span className="flex-1 text-center">DOSSIER SCANNÉ</span>
-                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${formData.urlScanne ? "bg-white/20 text-white" : "bg-blue-50 text-blue-300"}`}>
+                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${formData.urlScanne ? "bg-brand-card/20 text-white" : "bg-brand-surface text-blue-300"}`}>
                             {formData.urlScanne ? "1" : "0"}
                          </span>
                       </button>
@@ -541,10 +542,10 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
                 <div className="flex items-center justify-between mb-1.5">
                   <label className={labelCls}><MessageSquare className="w-3 h-3" /> Note Interne</label>
                   <label className="flex items-center gap-2 cursor-pointer group">
-                    <span className="text-[9px] font-black text-slate-400 group-hover:text-primary transition-colors uppercase tracking-widest">Traité</span>
+                    <span className="text-[9px] font-black text-brand-text-muted group-hover:text-primary transition-colors uppercase tracking-widest">Traité</span>
                     <input 
                       type="checkbox" 
-                      className="w-4 h-4 rounded border-2 border-slate-300 text-primary focus:ring-primary/20 transition-all cursor-pointer"
+                      className="w-4 h-4 rounded border-2 border-brand-border-highlight text-primary focus:ring-primary/20 transition-all cursor-pointer"
                       checked={formData.isNoteTraitee}
                       onChange={handleCheckboxChange("isNoteTraitee")}
                     />
@@ -558,10 +559,10 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
             <div className="col-span-12 lg:col-span-5 space-y-6">
               <div className="flex items-center gap-3">
                 <div className="h-8 w-1.5 bg-orange-500 rounded-full" />
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Finance & Suivi</h3>
+                <h3 className="text-sm font-black text-brand-text uppercase tracking-widest">Finance & Suivi</h3>
               </div>
 
-              <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm shadow-slate-200/50 space-y-4">
+              <div className="bg-brand-card p-4 md:p-6 rounded-[2rem] border border-brand-border shadow-sm shadow-black/50/50 space-y-4">
                 <div className="space-y-1.5">
                   <label className={labelCls}><FileText className="w-3 h-3" /> Statut Fret</label>
                   <select className={inputCls(formData.statutFret)} required={isDateRetraitSaisie} value={formData.statutFret} onChange={set("statutFret")}>
@@ -583,11 +584,11 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
               </div>
 
               {/* Autres Charges */}
-              <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm shadow-slate-200/50">
+              <div className="bg-brand-card p-4 md:p-6 rounded-[2rem] border border-brand-border shadow-sm shadow-black/50/50">
                 <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                   <label className={labelCls}>Charges Additionnelles</label>
                   <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => setShowTypeManager(!showTypeManager)} className={`text-[9px] font-black p-1 px-2 rounded-lg border transition-all uppercase ${showTypeManager ? "bg-orange-100 border-orange-200 text-orange-600" : "bg-slate-50 border-slate-100 text-slate-400 hover:text-primary hover:border-primary"}`}>
+                    <button type="button" onClick={() => setShowTypeManager(!showTypeManager)} className={`text-[9px] font-black p-1 px-2 rounded-lg border transition-all uppercase ${showTypeManager ? "bg-orange-100 border-orange-200 text-orange-600" : "bg-brand-bg border-brand-border text-brand-text-muted hover:text-primary hover:border-primary"}`}>
                       {showTypeManager ? "ANNULER" : "(+) TYPE"}
                     </button>
                     <button type="button" onClick={addCharge} className="text-[10px] font-black text-primary flex items-center gap-1 bg-primary/5 p-1 px-2 rounded-lg border border-primary/10 hover:bg-primary hover:text-white transition-all"><Plus className="w-3 h-3" /> AJOUTER</button>
@@ -595,7 +596,7 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
                 </div>
 
                 {showTypeManager && (
-                  <div className="mb-4 p-3 bg-blue-50/50 border border-blue-100 rounded-xl space-y-2 animate-in slide-in-from-top-2">
+                  <div className="mb-4 p-3 bg-brand-surface/50 border border-blue-100 rounded-xl space-y-2 animate-in slide-in-from-top-2">
                     <p className="text-[9px] font-black text-blue-400 uppercase tracking-wider">Nouveau Type de Charge</p>
                     <div className="flex gap-2">
                       <input 
@@ -603,7 +604,7 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
                         value={newTypeName} 
                         onChange={(e) => setNewTypeName(e.target.value.toUpperCase())}
                         placeholder="Ex: FRAIS DE DOSSIER"
-                        className="flex-1 bg-white border border-blue-100 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20"
+                        className="flex-1 bg-brand-card border border-blue-100 rounded-lg px-3 py-1.5 text-xs font-bold text-brand-text outline-none focus:ring-2 focus:ring-primary/20"
                       />
                       <button 
                         type="button" 
@@ -619,13 +620,13 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
 
                 <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
                   {autresCharges.map((c, i) => (
-                    <div key={i} className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-100">
-                      <select className="bg-transparent border-none p-0 text-[11px] font-bold text-slate-700 flex-1" value={c.type} onChange={(e) => updateCharge(i, "type", e.target.value)}>
+                    <div key={i} className="flex items-center gap-2 p-2 bg-brand-bg rounded-xl border border-brand-border">
+                      <select className="bg-transparent border-none p-0 text-[11px] font-bold text-brand-text flex-1" value={c.type} onChange={(e) => updateCharge(i, "type", e.target.value)}>
                         <option value="">Type...</option>
                         {typeCharges.map(tc => <option key={tc.id} value={tc.nom}>{tc.nom}</option>)}
                       </select>
                       <input 
-                        className="w-32 bg-white/50 px-2 py-1 rounded-lg border-2 border-slate-300 text-[11px] font-mono font-black text-blue-600 text-right focus:ring-1 focus:ring-blue-200 transition-all shadow-sm" 
+                        className="w-32 bg-brand-card/50 px-2 py-1 rounded-lg border-2 border-brand-border-highlight text-[11px] font-mono font-black text-blue-400 text-right focus:ring-1 focus:ring-blue-200 transition-all shadow-sm" 
                         value={formatAmount(c.montant)} 
                         onChange={(e) => updateCharge(i, "montant", e.target.value)} 
                       />
@@ -636,14 +637,14 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
               </div>
 
               {/* Retour */}
-              <div className={`p-6 rounded-[2rem] border transition-all ${formData.raisonRetour ? "bg-orange-50 border-orange-200" : "bg-white border-slate-100"}`}>
+              <div className={`p-4 md:p-6 rounded-[2rem] border transition-all ${formData.raisonRetour ? "bg-orange-50 border-orange-200" : "bg-brand-card border-brand-border"}`}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <RotateCcw className={`w-4 h-4 ${formData.raisonRetour ? "text-orange-500" : "text-slate-300"}`} />
-                    <span className="text-[10px] font-black text-slate-800 uppercase uppercase">Retour Dossier</span>
+                    <span className="text-[10px] font-black text-brand-text uppercase uppercase">Retour Dossier</span>
                   </div>
                   {!showReturnForm && (
-                     <button type="button" onClick={() => setShowReturnForm(true)} className="text-[9px] font-black p-1 px-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-orange-500 hover:text-white uppercase">{formData.raisonRetour ? "Modifier" : "Signaler"}</button>
+                     <button type="button" onClick={() => setShowReturnForm(true)} className="text-[9px] font-black p-1 px-2 rounded-lg bg-brand-surface text-brand-text-dim hover:bg-orange-500 hover:text-white uppercase">{formData.raisonRetour ? "Modifier" : "Signaler"}</button>
                   )}
                 </div>
                 {showReturnForm && (
@@ -658,14 +659,14 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
                     </div>
                   </div>
                 )}
-                {formData.raisonRetour && !showReturnForm && <div className="text-[11px] font-bold text-orange-700 bg-white/50 p-2 rounded-lg">{formData.raisonRetour}</div>}
+                {formData.raisonRetour && !showReturnForm && <div className="text-[11px] font-bold text-orange-700 bg-brand-card/50 p-2 rounded-lg">{formData.raisonRetour}</div>}
               </div>
             </div>
           </div>
 
           {/* Footer Actions */}
-          <div className="flex gap-4 pt-4 border-t border-slate-100 flex-shrink-0">
-            <button type="button" onClick={onClose} className="flex-1 px-6 py-4 rounded-[1.5rem] border-2 border-slate-100 font-black text-slate-400 text-xs uppercase">Fermer</button>
+          <div className="flex gap-4 pt-4 border-t border-brand-border flex-shrink-0">
+            <button type="button" onClick={onClose} className="flex-1 px-6 py-4 rounded-[1.5rem] border-2 border-brand-border font-black text-brand-text-muted text-xs uppercase">Fermer</button>
             
             {bl && (
               <button 
@@ -674,7 +675,7 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
                   if (window.confirm(`Voulez-vous vraiment supprimer le BL ${bl.booking} ?`)) {
                     setIsSaving(true);
                     try {
-                      const res = await fetch(`/api/bls/${bl.id}`, { method: "DELETE" });
+                      const res = await fetchSync(`/api/bls/${bl.id}`, { method: "DELETE" });
                       if (res.ok) {
                         onSave();
                         onClose();

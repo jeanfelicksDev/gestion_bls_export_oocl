@@ -5,6 +5,7 @@ import * as XLSX from "xlsx";
 import { Upload, FileUp, Check, AlertCircle } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { fetchSync } from "@/lib/fetchSync";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -75,7 +76,7 @@ export default function ExcelUpload({ onUploadSuccess }: ExcelUploadProps) {
           booking: row[0],
           pod: row[1],
           shipper: row[2],
-          statut: row[3],
+          statutFret: row[3],
           montantFret: row[4],
           statutCorrection: row[5],
           numTimbre: row[6],
@@ -84,7 +85,7 @@ export default function ExcelUpload({ onUploadSuccess }: ExcelUploadProps) {
           commentaire: row[9],
         }));
 
-        const response = await fetch("/api/voyages", {
+        const response = await fetchSync("/api/voyages", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ header, bls }),
@@ -109,12 +110,12 @@ export default function ExcelUpload({ onUploadSuccess }: ExcelUploadProps) {
     <div className="w-full">
       <label className={cn(
         "relative flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-2xl cursor-pointer transition-all",
-        "bg-white/50 border-gray-300 hover:border-primary hover:bg-white/80",
+        "bg-brand-card/50 border-brand-border-highlight hover:border-primary hover:bg-brand-card/80",
         isUploading && "opacity-50 cursor-not-allowed"
       )}>
         <div className="flex flex-col items-center justify-center pt-5 pb-6">
-          <Upload className="w-8 h-8 mb-3 text-gray-500" />
-          <p className="mb-2 text-sm text-gray-500">
+          <Upload className="w-8 h-8 mb-3 text-brand-text-muted" />
+          <p className="mb-2 text-sm text-brand-text-muted">
             <span className="font-semibold">Cliquez pour importer</span> ou glissez-déposez
           </p>
           <p className="text-xs text-gray-400">Excel (.xlsx, .xls)</p>

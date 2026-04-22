@@ -5,6 +5,7 @@ import { X, Save, FilePlus, Upload, Plus, Trash2, Calendar, FileCheck, AlertCirc
 import * as xlsx from "xlsx";
 import { format } from "date-fns";
 import StatusBadge from "./StatusBadge";
+import { fetchSync } from "@/lib/fetchSync";
 
 interface VoyageItem {
   id: string;
@@ -23,6 +24,7 @@ interface BlData {
   valeurFret: string;      // Rate(Liste)
   montantFret: string;     // Fret ABN (Montant)
   statutCorrection: string;// Statut BL(liste)
+  statutFret: string;      // Statut Fret
   numTimbre: string;       // Timbre
   dateRetrait: string;     // D.Retrait
   commentaire: string;     // Commentaire
@@ -47,7 +49,7 @@ export default function AddBlModal({ onClose, onSuccess }: AddBlModalProps) {
 
   const fetchVoyages = async () => {
     try {
-      const res = await fetch("/api/voyages");
+      const res = await fetchSync("/api/voyages");
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) setVoyages(data);
@@ -69,6 +71,7 @@ export default function AddBlModal({ onClose, onSuccess }: AddBlModalProps) {
         valeurFret: "",
         montantFret: "",
         statutCorrection: "",
+        statutFret: "",
         numTimbre: "",
         dateRetrait: "",
         commentaire: "",
@@ -149,6 +152,7 @@ export default function AddBlModal({ onClose, onSuccess }: AddBlModalProps) {
             valeurFret: cRate !== -1 ? String(row[cRate] || "").trim() : "",
             montantFret: cMontant !== -1 ? String(row[cMontant] || "").trim() : "",
             statutCorrection: cStatut !== -1 ? String(row[cStatut] || "").trim() : "",
+            statutFret: cStatut !== -1 ? String(row[cStatut] || "").trim() : "",
             numTimbre: cTimbre !== -1 ? String(row[cTimbre] || "").trim() : "",
             dateRetrait: dRetrait,
             commentaire: cComment !== -1 ? String(row[cComment] || "").trim() : ""
@@ -182,7 +186,7 @@ export default function AddBlModal({ onClose, onSuccess }: AddBlModalProps) {
 
     setIsSaving(true);
     try {
-      const res = await fetch("/api/bls/batch", {
+      const res = await fetchSync("/api/bls/batch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ voyageId: selectedVoyageId, bls: validBls }),
@@ -203,21 +207,21 @@ export default function AddBlModal({ onClose, onSuccess }: AddBlModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="bg-white rounded-[2.5rem] w-full max-w-7xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[92vh] border border-white/20">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-4 md:p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+      <div className="bg-brand-card rounded-[2.5rem] w-full max-w-7xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[92vh] border border-white/20">
         
         {/* Header */}
-        <div className="px-10 py-8 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-20">
-          <div className="flex items-center gap-6">
+        <div className="px-10 py-8 border-b border-brand-border flex justify-between items-center bg-brand-card sticky top-0 z-20">
+          <div className="flex items-center gap-4 md:p-6">
             <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-3xl flex items-center justify-center shadow-inner ring-4 ring-emerald-50/50">
               <FilePlus className="w-7 h-7" />
             </div>
             <div>
-              <h2 className="text-3xl font-black text-slate-800 tracking-tighter">
+              <h2 className="text-3xl font-black text-brand-text tracking-tighter">
                 Importation de BLs
               </h2>
               <div className="flex items-center gap-2 mt-1">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                <p className="text-xs font-bold text-brand-text-muted uppercase tracking-widest">
                   {bls.length} BLs dans la file d'attente
                 </p>
                 {importSuccess && (
@@ -228,17 +232,17 @@ export default function AddBlModal({ onClose, onSuccess }: AddBlModalProps) {
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="p-4 text-slate-300 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-all active:scale-95">
+          <button onClick={onClose} className="p-4 text-slate-300 hover:text-brand-text-dim hover:bg-brand-bg rounded-full transition-all active:scale-95">
             <X className="w-8 h-8" />
           </button>
         </div>
         
-        <div className="flex-1 overflow-hidden p-8 bg-slate-50/30 flex flex-col gap-6">
-          <div className="grid grid-cols-12 gap-6 items-end">
+        <div className="flex-1 overflow-hidden p-4 md:p-8 bg-brand-bg/30 flex flex-col gap-4 md:p-6">
+          <div className="grid grid-cols-12 gap-4 md:p-6 items-end">
             <div className="col-span-12 lg:col-span-7">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 ml-1">Sélection du Voyage Destination</label>
+              <label className="block text-[10px] font-black text-brand-text-muted uppercase tracking-[0.2em] mb-3 ml-1">Sélection du Voyage Destination</label>
               <select 
-                className="w-full px-6 py-4 rounded-3xl border-2 border-slate-100 bg-white focus:bg-white focus:border-emerald-500 focus:ring-8 focus:ring-emerald-500/5 transition-all font-black text-slate-700 text-sm shadow-sm"
+                className="w-full px-6 py-4 rounded-3xl border-2 border-brand-border bg-brand-card focus:bg-brand-card focus:border-emerald-500 focus:ring-8 focus:ring-emerald-500/5 transition-all font-black text-brand-text text-sm shadow-sm"
                 value={selectedVoyageId}
                 onChange={(e) => setSelectedVoyageId(e.target.value)}
                 required
@@ -256,7 +260,7 @@ export default function AddBlModal({ onClose, onSuccess }: AddBlModalProps) {
               <button
                 type="button"
                 onClick={handleManualAdd}
-                className="flex-[1] px-6 py-4 rounded-3xl bg-white border-2 border-slate-100 text-slate-600 font-black text-xs uppercase tracking-widest hover:border-emerald-500 hover:text-emerald-600 hover:shadow-xl hover:shadow-emerald-500/10 transition-all flex items-center justify-center gap-2 active:scale-95"
+                className="flex-[1] px-6 py-4 rounded-3xl bg-brand-card border-2 border-brand-border text-brand-text-dim font-black text-xs uppercase tracking-widest hover:border-emerald-500 hover:text-emerald-600 hover:shadow-xl hover:shadow-emerald-500/10 transition-all flex items-center justify-center gap-2 active:scale-95"
               >
                 <Plus className="w-4 h-4" />
                 Manuel
@@ -274,13 +278,13 @@ export default function AddBlModal({ onClose, onSuccess }: AddBlModalProps) {
           </div>
 
           {/* Table Container */}
-          <div className="flex-1 bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden flex flex-col min-h-0">
+          <div className="flex-1 bg-brand-card rounded-[2.5rem] shadow-xl shadow-black/50/50 border border-brand-border overflow-hidden flex flex-col min-h-0">
             <div className="overflow-auto flex-1 scrollbar-thin scrollbar-thumb-slate-200">
               <table className="w-full text-left text-xs whitespace-nowrap border-separate border-spacing-0">
                 <thead className="sticky top-0 z-10">
-                  <tr className="bg-slate-50/80 backdrop-blur-md">
+                  <tr className="bg-brand-bg/80 backdrop-blur-md">
                     {["#", "Booking", "Statut", "POD", "Shipper", "Correction", "Timbre", "D. Retrait", "Note", ""].map((h, i) => (
-                      <th key={i} className="px-5 py-4 text-slate-400 font-black uppercase tracking-widest border-b border-slate-100">{h}</th>
+                      <th key={i} className="px-5 py-4 text-brand-text-muted font-black uppercase tracking-widest border-b border-brand-border">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -297,19 +301,19 @@ export default function AddBlModal({ onClose, onSuccess }: AddBlModalProps) {
                     </tr>
                   ) : (
                     bls.map((b, i) => (
-                      <tr key={b.id} className="group hover:bg-slate-50/50 transition-all">
+                      <tr key={b.id} className="group hover:bg-brand-bg/50 transition-all">
                         <td className="px-5 py-3 font-mono font-black text-slate-300">{i + 1}</td>
-                        <td className="px-5 py-3"><input value={b.booking} onChange={e => handleChange(b.id, 'booking', e.target.value)} className="w-32 bg-transparent border-b-2 border-transparent focus:border-emerald-400 focus:outline-none font-black text-slate-800 uppercase placeholder:text-slate-200" placeholder="Booking..." /></td>
+                        <td className="px-5 py-3"><input value={b.booking} onChange={e => handleChange(b.id, 'booking', e.target.value)} className="w-32 bg-transparent border-b-2 border-transparent focus:border-emerald-400 focus:outline-none font-black text-brand-text uppercase placeholder:text-slate-200" placeholder="Booking..." /></td>
                         <td className="px-5 py-3">
                            <StatusBadge status={b.statut} className="scale-75 origin-left" />
                         </td>
-                        <td className="px-5 py-3"><input value={b.pod} onChange={e => handleChange(b.id, 'pod', e.target.value)} className="w-20 bg-transparent border-b-2 border-transparent focus:border-blue-400 focus:outline-none font-bold text-slate-600" placeholder="POD" /></td>
-                        <td className="px-5 py-3"><input value={b.shipper} onChange={e => handleChange(b.id, 'shipper', e.target.value)} className="w-48 bg-transparent border-b-2 border-transparent focus:border-blue-400 focus:outline-none font-semibold text-slate-600 truncate" placeholder="Shipper..." /></td>
+                        <td className="px-5 py-3"><input value={b.pod} onChange={e => handleChange(b.id, 'pod', e.target.value)} className="w-20 bg-transparent border-b-2 border-transparent focus:border-blue-400 focus:outline-none font-bold text-brand-text-dim" placeholder="POD" /></td>
+                        <td className="px-5 py-3"><input value={b.shipper} onChange={e => handleChange(b.id, 'shipper', e.target.value)} className="w-48 bg-transparent border-b-2 border-transparent focus:border-blue-400 focus:outline-none font-semibold text-brand-text-dim truncate" placeholder="Shipper..." /></td>
 
-                        <td className="px-5 py-3"><input value={b.statutCorrection} onChange={e => handleChange(b.id, 'statutCorrection', e.target.value)} className="w-24 bg-transparent border-b-2 border-transparent focus:border-blue-400 focus:outline-none font-bold text-slate-500" placeholder="Statut..." /></td>
-                        <td className="px-5 py-3"><input value={b.numTimbre} onChange={e => handleChange(b.id, 'numTimbre', e.target.value)} className="w-24 bg-transparent border-b-2 border-transparent focus:border-blue-400 focus:outline-none font-bold text-slate-800 uppercase" placeholder="Timbre" /></td>
-                        <td className="px-5 py-3"><input type="date" value={b.dateRetrait} onChange={e => handleChange(b.id, 'dateRetrait', e.target.value)} className="w-32 bg-transparent border-b-2 border-transparent focus:border-blue-400 focus:outline-none font-bold text-slate-700" /></td>
-                        <td className="px-5 py-3"><input value={b.commentaire} onChange={e => handleChange(b.id, 'commentaire', e.target.value)} className="w-48 bg-transparent border-b-2 border-transparent focus:border-blue-400 focus:outline-none text-slate-400 italic" placeholder="Note..." /></td>
+                        <td className="px-5 py-3"><input value={b.statutCorrection} onChange={e => handleChange(b.id, 'statutCorrection', e.target.value)} className="w-24 bg-transparent border-b-2 border-transparent focus:border-blue-400 focus:outline-none font-bold text-brand-text-muted" placeholder="Statut..." /></td>
+                        <td className="px-5 py-3"><input value={b.numTimbre} onChange={e => handleChange(b.id, 'numTimbre', e.target.value)} className="w-24 bg-transparent border-b-2 border-transparent focus:border-blue-400 focus:outline-none font-bold text-brand-text uppercase" placeholder="Timbre" /></td>
+                        <td className="px-5 py-3"><input type="date" value={b.dateRetrait} onChange={e => handleChange(b.id, 'dateRetrait', e.target.value)} className="w-32 bg-transparent border-b-2 border-transparent focus:border-blue-400 focus:outline-none font-bold text-brand-text" /></td>
+                        <td className="px-5 py-3"><input value={b.commentaire} onChange={e => handleChange(b.id, 'commentaire', e.target.value)} className="w-48 bg-transparent border-b-2 border-transparent focus:border-blue-400 focus:outline-none text-brand-text-muted italic" placeholder="Note..." /></td>
                         <td className="px-5 py-3 text-right">
                           <button type="button" onClick={() => handleRemoveBl(b.id)} className="text-slate-200 hover:text-red-500 transition-all p-2 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                         </td>
@@ -326,11 +330,11 @@ export default function AddBlModal({ onClose, onSuccess }: AddBlModalProps) {
         </div>
 
         {/* Action Bar */}
-        <div className="px-10 py-6 border-t border-slate-100 bg-white flex justify-end gap-4 sticky bottom-0 z-20">
+        <div className="px-10 py-6 border-t border-brand-border bg-brand-card flex justify-end gap-4 sticky bottom-0 z-20">
           <button 
             type="button" 
             onClick={onClose}
-            className="px-8 py-4 rounded-2xl border-2 border-slate-100 font-black text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all text-xs uppercase tracking-widest active:scale-95"
+            className="px-8 py-4 rounded-2xl border-2 border-brand-border font-black text-brand-text-muted hover:bg-brand-bg hover:text-brand-text-dim transition-all text-xs uppercase tracking-widest active:scale-95"
           >
             Annuler
           </button>

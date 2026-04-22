@@ -1,0 +1,16 @@
+{
+  "name": "OOCL BLs Export",
+  "short_name": "OOCL BLs",
+  "description": "Système de suivi des BL Export OOCL - Mode Hors-Ligne",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0c10",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

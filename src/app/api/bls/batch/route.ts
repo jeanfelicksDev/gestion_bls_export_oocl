@@ -5,11 +5,11 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    if (!body.voyageId || !body.bls || !Array.isArray(body.bls)) {
-      return NextResponse.json({ error: "VoyageId et un tableau de BLs sont requis" }, { status: 400 });
+    if (!body.bls || !Array.isArray(body.bls)) {
+      return NextResponse.json({ error: "Un tableau de BLs est requis" }, { status: 400 });
     }
 
-    const voyageId = body.voyageId;
+    const voyageId = body.voyageId || null;
     const bls = body.bls;
     
     let successCount = 0;
@@ -21,17 +21,18 @@ export async function POST(req: Request) {
        const bookingStr = String(item.booking).trim().toUpperCase();
        if (bookingStr.length < 3) continue;
 
-       const data = {
+       const data: any = {
          voyageId: voyageId,
-         pod: item.pod ? String(item.pod).trim() : null,
-         shipper: item.shipper ? String(item.shipper).trim() : null,
-         valeurFret: item.valeurFret ? String(item.valeurFret).trim() : null,
-         montantFret: item.montantFret ? String(item.montantFret).trim() : null,
-         statutCorrection: item.statutCorrection ? String(item.statutCorrection).trim() : null,
-         numTimbre: item.numTimbre ? String(item.numTimbre).trim() : null,
-         dateRetrait: item.dateRetrait ? new Date(item.dateRetrait) : null,
-         statut: item.dateRetrait ? "RETIRE" : "EN ATTENTE RETRAIT",
-         commentaire: item.commentaire ? String(item.commentaire).trim() : null,
+         pod: item.pod ? String(item.pod).trim() : undefined,
+         shipper: item.shipper ? String(item.shipper).trim() : undefined,
+         valeurFret: item.valeurFret ? String(item.valeurFret).trim() : undefined,
+         montantFret: item.montantFret ? String(item.montantFret).trim() : undefined,
+         statutCorrection: item.statutCorrection ? String(item.statutCorrection).trim() : undefined,
+         statutFret: item.statutFret ? String(item.statutFret).trim() : undefined,
+         numTimbre: item.numTimbre ? String(item.numTimbre).trim() : undefined,
+         dateRetrait: item.dateRetrait ? new Date(item.dateRetrait) : undefined,
+         statut: item.dateRetrait ? "RETIRE" : undefined,
+         commentaire: (item.commentaire && String(item.commentaire).trim() !== "") ? String(item.commentaire).trim() : undefined,
        };
 
        await prisma.bL.upsert({

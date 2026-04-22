@@ -1,35 +1,54 @@
 @import "tailwindcss";
 
 :root {
-  --background: oklch(0.98 0.01 240);
-  --foreground: oklch(0.15 0.02 240);
-  --primary: oklch(0.45 0.15 240);
-  --primary-foreground: oklch(0.98 0.01 240);
-  --accent: oklch(0.65 0.2 30);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.15 0.02 240);
-  --border: oklch(0.9 0.01 240);
+  /* Cotation-log translated to custom variables if needed, though we map them to tailwind via @theme */
 }
 
 @theme {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-accent: var(--accent);
+  --color-brand-bg: #0a0c10;
+  --color-brand-surface: rgba(20, 24, 33, 0.7);
+  --color-brand-card: rgba(30, 36, 48, 0.5);
+  
+  --color-brand-primary: #10b981;
+  --color-brand-accent: #f59e0b;
+  
+  --color-brand-text: #f3f4f6;
+  --color-brand-text-dim: #9ca3af;
+  --color-brand-text-muted: #6b7280;
+  
+  --color-brand-border: rgba(255, 255, 255, 0.08);
+  --color-brand-border-highlight: rgba(255, 255, 255, 0.15);
+  
+  --color-primary: #10b981;
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
+  background-color: var(--color-brand-bg);
+  color: var(--color-brand-text);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Scrollbar Styling from cotation-log */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-brand-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-brand-border-highlight);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-brand-text-muted);
 }
 
 .glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  background: var(--color-brand-surface);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-brand-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
 }
 
 .card-hover {
@@ -38,20 +57,29 @@ body {
 
 .card-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.1);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
 }
 
-/* Light green background for non-empty inputs */
+/* Dark green background for non-empty inputs */
 input:not(:placeholder-shown):not([type="checkbox"]):not([type="radio"]),
 input[type="date"]:not(:invalid),
 select:not([value=""]):not(:invalid) {
-  background-color: #f0fdf4 !important; /* green-50 */
+  background-color: rgba(16, 185, 129, 0.05) !important;
+  border-color: var(--color-brand-primary) !important;
 }
 
 /* Fallback/Correction for date inputs and selects which might need more specific handling in some browsers */
 input:not(:placeholder-shown),
 select:has(option:checked:not([value=""])) {
-  background-color: #f0fdf4 !important;
+  background-color: rgba(16, 185, 129, 0.05) !important;
+  border-color: var(--color-brand-primary) !important;
+}
+
+/* Override for the main search input to keep it white when typing */
+input.search-input-white,
+input.search-input-white:not(:placeholder-shown) {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
 }
 
 @media print {
