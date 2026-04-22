@@ -77,9 +77,16 @@ select:has(option:checked:not([value=""])) {
 
 /* Override for the main search input to keep it white when typing */
 input.search-input-white,
-input.search-input-white:not(:placeholder-shown) {
+input.search-input-white:not(:placeholder-shown),
+input.search-input-white:not(:placeholder-shown):not([type="checkbox"]):not([type="radio"]) {
   background-color: #ffffff !important;
   color: #0f172a !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+input.search-input-white:focus,
+input.search-input-white:focus:not(:placeholder-shown):not([type="checkbox"]):not([type="radio"]) {
+  border-color: var(--color-brand-primary) !important;
 }
 
 @media print {
