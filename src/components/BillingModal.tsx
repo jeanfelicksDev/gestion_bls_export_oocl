@@ -394,7 +394,7 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-brand-card rounded-[2rem] w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-white/20">
+      <div className="bg-brand-card rounded-[2rem] w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-brand-border">
 
         {/* ── Header ── */}
         <div className="p-4 md:p-8 border-b border-brand-border bg-gradient-to-r from-gray-50 to-white flex justify-between items-center flex-shrink-0">
@@ -410,7 +410,7 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="p-3 hover:bg-gray-100 rounded-2xl transition-all text-gray-400">
+          <button onClick={onClose} className="p-3 hover:bg-gray-100 rounded-2xl transition-all text-brand-text-muted">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -421,7 +421,7 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
             {/* Taux dollar */}
             <div className="space-y-1.5 relative">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                <label className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest flex items-center gap-1.5">
                   <DollarSign className="w-3 h-3" /> Taux du Dollar
                 </label>
                 {saveStatus === "saving" && (
@@ -451,7 +451,7 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
 
             {/* Colonnes */}
             <div className="space-y-1.5 flex-1">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Colonnes affichées</label>
+              <label className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest">Colonnes affichées</label>
               <div className="flex flex-wrap gap-2">
                 {["Taxe de Port", ...otherChargeTypes].map(col => (
                   <button
@@ -460,7 +460,7 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
                       visibleColumns[col]
                         ? "bg-primary/10 border-primary/20 text-primary"
-                        : "bg-brand-card border-brand-border-highlight text-gray-400"
+                        : "bg-brand-card border-brand-border-highlight text-brand-text-muted"
                     }`}
                   >
                     {visibleColumns[col] ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
@@ -474,7 +474,7 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
             <button
               onClick={handleGeneratePDF}
               disabled={isGenerating}
-              className="bg-[#002F6C] text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-[#003d8f] transition-all shadow-lg shadow-blue-900/20 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="bg-[#002F6C] text-brand-text px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-[#003d8f] transition-all shadow-lg shadow-blue-900/20 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isGenerating
                 ? <><Loader2 className="w-5 h-5 animate-spin" /> Génération...</>
@@ -486,7 +486,7 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
 
         {/* ── Aperçu tableau ── */}
         <div className="flex-1 overflow-auto p-4 md:p-6">
-          <p className="text-[11px] text-gray-400 mb-3 font-medium italic">
+          <p className="text-[11px] text-brand-text-muted mb-3 font-medium italic">
             Aperçu — format A4 paysage avec colonnes charges réduites
           </p>
           <table className="w-full border-collapse text-sm border border-blue-200/60">
@@ -557,7 +557,7 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
               <button 
                 type="button"
                 onClick={() => setShowError(false)}
-                className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-800 transition-all active:scale-95 shadow-xl shadow-black/50"
+                className="w-full bg-slate-900 text-brand-text py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-800 transition-all active:scale-95 shadow-xl shadow-black/50"
               >
                 Compris, je vais le renseigner
               </button>

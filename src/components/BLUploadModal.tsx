@@ -139,13 +139,13 @@ export default function BLUploadModal({ voyageId, voyageLabel, onClose, onSucces
                 </>
               ) : (
                 <>
-                  <div className={`p-4 rounded-2xl mb-4 transition-all ${isDragging ? "bg-primary text-white scale-110" : "bg-brand-card text-gray-400 shadow-sm"}`}>
+                  <div className={`p-4 rounded-2xl mb-4 transition-all ${isDragging ? "bg-primary text-white scale-110" : "bg-brand-card text-brand-text-muted shadow-sm"}`}>
                     <Upload className="w-8 h-8" />
                   </div>
                   <p className="text-brand-text font-semibold text-center">
                     {isDragging ? "Déposez le fichier ici" : "Cliquez ou glissez-déposez"}
                   </p>
-                  <p className="text-gray-400 text-sm mt-1">Fichier Excel (.xlsx, .xls)</p>
+                  <p className="text-brand-text-muted text-sm mt-1">Fichier Excel (.xlsx, .xls)</p>
                 </>
               )}
             </div>

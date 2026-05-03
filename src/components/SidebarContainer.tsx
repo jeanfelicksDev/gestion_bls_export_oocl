@@ -24,16 +24,16 @@ export default function SidebarContainer() {
   return (
     <>
       {/* Mobile Header (Visible only on small screens) */}
-      <div className="md:hidden fixed top-0 left-0 w-full bg-brand-card/90 backdrop-blur-md border-b border-white/10 z-30 flex items-center justify-between p-4 px-6 shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
+      <div className="md:hidden fixed top-0 left-0 w-full bg-brand-card/90 backdrop-blur-md border-b border-brand-border z-30 flex items-center justify-between p-4 px-6 shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
         <div className="flex items-center gap-3">
            <div className="bg-primary p-2 rounded-xl shadow-lg shadow-primary/20">
-             <Anchor className="w-6 h-6 text-white" />
+             <Anchor className="w-6 h-6 text-brand-text" />
            </div>
            <div>
              <h1 className="text-xl font-black text-primary leading-none">OOCL</h1>
            </div>
         </div>
-        <button onClick={() => setIsOpen(true)} className="p-2.5 bg-brand-surface rounded-xl text-brand-text active:scale-95 transition-transform border border-brand-border hover:bg-white/10">
+        <button onClick={() => setIsOpen(true)} className="p-2.5 bg-brand-surface rounded-xl text-brand-text active:scale-95 transition-transform border border-brand-border hover:bg-brand-surface">
           <Menu className="w-6 h-6" />
         </button>
       </div>
@@ -49,7 +49,7 @@ export default function SidebarContainer() {
         {isOpen && (
           <button 
             onClick={() => setIsOpen(false)} 
-            className="md:hidden absolute top-4 -right-14 p-2 bg-brand-card rounded-xl text-white shadow-xl border border-white/10"
+            className="md:hidden absolute top-4 -right-14 p-2 bg-brand-card rounded-xl text-brand-text shadow-xl border border-brand-border"
           >
             <X className="w-6 h-6" />
           </button>

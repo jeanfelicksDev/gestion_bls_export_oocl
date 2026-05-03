@@ -186,7 +186,7 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
   }
 
   return (
-    <div className="glass rounded-3xl overflow-hidden mb-8 border border-white/40 shadow-xl">
+    <div className="glass rounded-3xl overflow-hidden mb-8 border border-brand-border shadow-xl">
       <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 md:p-6 text-black border-b border-blue-200/50">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-4">
@@ -210,12 +210,12 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
 
           <div className="flex items-center gap-4">
             <div className="flex gap-2 text-sm">
-              <div className="bg-white/50 px-3 py-1.5 rounded-xl border border-blue-200/50 flex items-center gap-2 whitespace-nowrap">
-                <span className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">ETA</span>
+              <div className="bg-brand-surface0 px-3 py-1.5 rounded-xl border border-blue-200/50 flex items-center gap-2 whitespace-nowrap">
+                <span className="text-brand-text-muted text-[10px] uppercase font-bold tracking-wider">ETA</span>
                 <span className="font-bold text-sm text-gray-800">{voyage.eta ? format(new Date(voyage.eta), "d MMM yy", { locale: fr }) : "-"}</span>
               </div>
-              <div className="bg-white/50 px-3 py-1.5 rounded-xl border border-blue-200/50 flex items-center gap-2 whitespace-nowrap">
-                <span className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">ETD</span>
+              <div className="bg-brand-surface0 px-3 py-1.5 rounded-xl border border-blue-200/50 flex items-center gap-2 whitespace-nowrap">
+                <span className="text-brand-text-muted text-[10px] uppercase font-bold tracking-wider">ETD</span>
                 <span className="font-bold text-sm text-gray-800">{voyage.etd ? format(new Date(voyage.etd), "d MMM yy", { locale: fr }) : "-"}</span>
               </div>
             </div>
@@ -227,7 +227,7 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all font-bold text-sm shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
                     uploadedCount > 0 
                       ? "bg-indigo-600 text-white shadow-indigo-600/20 hover:bg-indigo-700" 
-                      : "bg-gray-100 text-gray-400 border border-slate-200 shadow-none"
+                      : "bg-gray-100 text-brand-text-muted border border-slate-200 shadow-none"
                   }`}
                   title="Télécharger tous les BLs (ZIP)"
                 >
@@ -257,7 +257,7 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all font-bold text-sm shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
                     uploadedCount > 0 
                       ? "bg-indigo-600 text-white shadow-indigo-600/20 hover:bg-indigo-700" 
-                      : "bg-gray-100 text-gray-400 border border-slate-200 shadow-none"
+                      : "bg-gray-100 text-brand-text-muted border border-slate-200 shadow-none"
                   }`}
                   title="Télécharger tous les BLs (ZIP)"
                 >
@@ -281,7 +281,7 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
                 <button
                   onClick={confirmETD}
                   disabled={isUpdating}
-                  className="bg-white/20 hover:bg-white text-white hover:text-primary px-4 py-2 rounded-xl backdrop-blur-md transition-all font-bold text-sm flex items-center gap-2 border border-white/20"
+                  className="bg-brand-surface hover:bg-white text-brand-text hover:text-primary px-4 py-2 rounded-xl backdrop-blur-md transition-all font-bold text-sm flex items-center gap-2 border border-brand-border"
                 >
                   {isUpdating ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -300,7 +300,7 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
         <div className="p-0 overflow-x-auto">
           <table className="w-full min-w-[800px] text-left border-collapse whitespace-nowrap">
             <thead>
-              <tr className="bg-brand-bg/50 text-gray-400 text-xs uppercase tracking-wider font-bold">
+              <tr className="bg-brand-bg/50 text-brand-text-muted text-xs uppercase tracking-wider font-bold">
                 <th className="px-6 py-4">Booking</th>
                 <th className="px-6 py-4">Shipper</th>
                 <th className="px-6 py-4">Statut</th>
@@ -339,7 +339,7 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
                       {bl.dateRetrait ? (
                         <span className="text-gray-200">{format(new Date(bl.dateRetrait), "dd/MM/yyyy")}</span>
                       ) : (
-                        <span className="text-gray-400 italic">En attente</span>
+                        <span className="text-brand-text-muted italic">En attente</span>
                       )}
                     </td>
                     <td className="px-6 py-4">
@@ -383,7 +383,7 @@ export default function VoyageCard({ voyage, onUpdate, onEditBL, showBLs = false
 
                       <button 
                         onClick={() => onEditBL(bl, voyage)}
-                        className="p-2 text-gray-400 hover:text-primary transition-colors rounded-lg hover:bg-primary/5"
+                        className="p-2 text-brand-text-muted hover:text-primary transition-colors rounded-lg hover:bg-primary/5"
                         title="Modifier"
                       >
                         <Edit2 className="w-4 h-4" />

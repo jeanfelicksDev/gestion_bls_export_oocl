@@ -364,13 +364,13 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-brand-card rounded-[2.5rem] w-full max-w-5xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[92vh] flex flex-col border border-white/20">
+      <div className="bg-brand-card rounded-[2.5rem] w-full max-w-5xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[92vh] flex flex-col border border-brand-border">
         
         {/* Hidden File Input */}
         <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf" className="hidden" />
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary to-blue-700 p-4 md:p-8 text-white flex justify-between items-center flex-shrink-0 relative overflow-hidden">
+        <div className="bg-gradient-to-r from-primary to-blue-700 p-4 md:p-8 text-brand-text flex justify-between items-center flex-shrink-0 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-brand-card/10 rounded-full -mr-32 -mt-32 blur-3xl" />
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-1">
@@ -384,7 +384,7 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
               )}
             </p>
           </div>
-          <button onClick={onClose} className="p-3 hover:bg-brand-card/10 rounded-full transition-all active:scale-95 relative z-10 border border-white/10">
+          <button onClick={onClose} className="p-3 hover:bg-brand-card/10 rounded-full transition-all active:scale-95 relative z-10 border border-brand-border">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -456,7 +456,7 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
                             }`}
                           >
                             <span className="flex-1 text-center">{type}</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${hasUrl ? "bg-brand-card/20 text-white" : "bg-brand-surface text-brand-text-muted"}`}>
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${hasUrl ? "bg-brand-card/20 text-brand-text" : "bg-brand-surface text-brand-text-muted"}`}>
                               {hasUrl ? "1" : "0"}
                             </span>
                           </button>
@@ -483,7 +483,7 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
                                 }`}
                                 title={hasUrl ? "Remplacer le PDF actuel" : "Téléverser le PDF Cloud"}
                               >
-                                {isThisUploading ? <Loader2 className="w-3 h-3 animate-spin text-white" /> : <CloudUpload className="w-3 h-3" />}
+                                {isThisUploading ? <Loader2 className="w-3 h-3 animate-spin text-brand-text" /> : <CloudUpload className="w-3 h-3" />}
                               </button>
                             </div>
                           )}
@@ -503,7 +503,7 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
                         }`}
                       >
                          <span className="flex-1 text-center">DOSSIER SCANNÉ</span>
-                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${formData.urlScanne ? "bg-brand-card/20 text-white" : "bg-brand-surface text-blue-300"}`}>
+                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${formData.urlScanne ? "bg-brand-card/20 text-brand-text" : "bg-brand-surface text-blue-300"}`}>
                             {formData.urlScanne ? "1" : "0"}
                          </span>
                       </button>
@@ -530,7 +530,7 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
                              }`}
                              title={formData.urlScanne ? "Remplacer le dossier" : "Téléverser le Dossier Scanné"}
                            >
-                             {isUploading && activeUploadType === "SCANNE" ? <Loader2 className="w-3 h-3 animate-spin text-white" /> : <CloudUpload className="w-3 h-3" />}
+                             {isUploading && activeUploadType === "SCANNE" ? <Loader2 className="w-3 h-3 animate-spin text-brand-text" /> : <CloudUpload className="w-3 h-3" />}
                            </button>
                         </div>
                       )}
@@ -644,7 +644,7 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
                     <span className="text-[10px] font-black text-brand-text uppercase uppercase">Retour Dossier</span>
                   </div>
                   {!showReturnForm && (
-                     <button type="button" onClick={() => setShowReturnForm(true)} className="text-[9px] font-black p-1 px-2 rounded-lg bg-brand-surface text-brand-text-dim hover:bg-orange-500 hover:text-white uppercase">{formData.raisonRetour ? "Modifier" : "Signaler"}</button>
+                     <button type="button" onClick={() => setShowReturnForm(true)} className="text-[9px] font-black p-1 px-2 rounded-lg bg-brand-surface text-brand-text-dim hover:bg-orange-500 hover:text-brand-text uppercase">{formData.raisonRetour ? "Modifier" : "Signaler"}</button>
                   )}
                 </div>
                 {showReturnForm && (
@@ -655,7 +655,7 @@ export default function BLEditModal({ bl, voyage, onClose, onSave }: BLEditModal
                     </select>
                     <div className="grid grid-cols-2 gap-3">
                       <input type="date" className={inputCls(formData.dateRetour)} value={formData.dateRetour} onChange={set("dateRetour")} />
-                      <button type="button" onClick={() => setShowReturnForm(false)} className="bg-slate-800 text-white text-[10px] font-black rounded-xl">OK</button>
+                      <button type="button" onClick={() => setShowReturnForm(false)} className="bg-slate-800 text-brand-text text-[10px] font-black rounded-xl">OK</button>
                     </div>
                   </div>
                 )}

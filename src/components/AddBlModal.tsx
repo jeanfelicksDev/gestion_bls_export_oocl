@@ -208,7 +208,7 @@ export default function AddBlModal({ onClose, onSuccess }: AddBlModalProps) {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-4 md:p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="bg-brand-card rounded-[2.5rem] w-full max-w-7xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[92vh] border border-white/20">
+      <div className="bg-brand-card rounded-[2.5rem] w-full max-w-7xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[92vh] border border-brand-border">
         
         {/* Header */}
         <div className="px-10 py-8 border-b border-brand-border flex justify-between items-center bg-brand-card sticky top-0 z-20">
@@ -345,7 +345,7 @@ export default function AddBlModal({ onClose, onSuccess }: AddBlModalProps) {
             className="px-10 py-4 rounded-2xl font-black text-white shadow-2xl shadow-emerald-500/20 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:shadow-none transition-all flex items-center gap-3 text-xs uppercase tracking-widest active:scale-95"
           >
              {isSaving ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-brand-border border-t-white rounded-full animate-spin" />
              ) : (
                 <Save className="w-5 h-5" />
              )}

@@ -88,7 +88,7 @@ export default function SyncProvider({ children }: { children: ReactNode }) {
           <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] animate-in fade-in slide-in-from-top-4 duration-300">
             <div className={`px-4 py-2 rounded-full border shadow-lg shadow-black/20 flex items-center gap-2 backdrop-blur-md ${
               !isOnline 
-                ? "bg-orange-500/90 text-white border-orange-400" 
+                ? "bg-orange-500/90 text-brand-text border-orange-400" 
                 : "bg-blue-600/90 text-white border-blue-500"
             }`}>
               {!isOnline ? (

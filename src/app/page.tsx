@@ -202,7 +202,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-3">
           <button 
             onClick={resetFilters} 
-            className="p-3 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all text-gray-400 hover:text-primary active:scale-95"
+            className="p-3 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all text-brand-text-muted hover:text-primary active:scale-95"
             title="Rafraîchir et réinitialiser"
           >
             <RefreshCw className={`w-6 h-6 ${loading ? 'animate-spin' : ''}`} />
@@ -212,11 +212,11 @@ export default function Dashboard() {
 
       {/* Search bar - full width */}
       <div className="relative group mb-12 md:mb-32">
-        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors" />
+        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-brand-text-muted group-focus-within:text-primary transition-colors" />
         <input 
           type="text"
           placeholder="Rechercher par Navire, Voyage, Booking, Timbre ou Shipper..."
-          className="search-input-white w-full pl-14 pr-6 py-5 bg-white border border-white/40 rounded-3xl shadow-lg focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-lg font-medium text-slate-900 placeholder:text-gray-400"
+          className="search-input-white w-full pl-14 pr-6 py-5 bg-white border border-brand-border rounded-3xl shadow-lg focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-lg font-medium text-slate-900 placeholder:text-brand-text-muted"
           value={searchTerm}
           onChange={(e) => { 
             setSearchTerm(e.target.value); 
@@ -226,7 +226,7 @@ export default function Dashboard() {
       </div>
 
       {loading && voyages.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-gray-400 italic">
+        <div className="flex flex-col items-center justify-center py-20 text-brand-text-muted italic">
           <RefreshCw className="w-10 h-10 animate-spin mb-4 opacity-20" />
           <p className="text-lg">Chargement des données...</p>
         </div>
@@ -432,13 +432,13 @@ export default function Dashboard() {
                       'bg-purple-50 group-hover:bg-purple-500'
                     } p-3 rounded-2xl transition-colors`}>
                       {viewMode === 'critical' ? (
-                        <Clock className={`w-6 h-6 text-orange-500 group-hover:text-white transition-colors`} />
+                        <Clock className={`w-6 h-6 text-orange-500 group-hover:text-brand-text transition-colors`} />
                       ) : viewMode === 'unrated' ? (
-                        <AlertTriangle className={`w-6 h-6 text-blue-500 group-hover:text-white transition-colors`} />
+                        <AlertTriangle className={`w-6 h-6 text-blue-500 group-hover:text-brand-text transition-colors`} />
                       ) : viewMode === 'with-notes' ? (
-                        <MessageSquare className={`w-6 h-6 text-indigo-500 group-hover:text-white transition-colors`} />
+                        <MessageSquare className={`w-6 h-6 text-indigo-500 group-hover:text-brand-text transition-colors`} />
                       ) : (
-                        <AlertCircle className={`w-6 h-6 text-purple-500 group-hover:text-white transition-colors`} />
+                        <AlertCircle className={`w-6 h-6 text-purple-500 group-hover:text-brand-text transition-colors`} />
                       )}
                     </div>
                   </div>
@@ -475,7 +475,7 @@ export default function Dashboard() {
                         viewMode === 'critical' ? 'text-orange-400' : 
                         viewMode === 'unrated' ? 'text-blue-400' : 
                         viewMode === 'with-notes' ? 'text-indigo-400' :
-                        'text-gray-400'
+                        'text-brand-text-muted'
                       }`}>Durée depuis ETD</span>
                       {daysSinceETD !== null ? (
                         <div className="flex items-center gap-2 overflow-hidden">
@@ -483,18 +483,18 @@ export default function Dashboard() {
                             +{daysSinceETD} <span className="text-sm font-bold opacity-70">jours</span>
                           </span>
                           <span className="text-gray-300 font-light text-xl">|</span>
-                          <span className={`text-[11px] font-black uppercase tracking-tighter truncate ${bl.dateRetrait ? "text-emerald-600" : "text-gray-400"}`}>
+                          <span className={`text-[11px] font-black uppercase tracking-tighter truncate ${bl.dateRetrait ? "text-emerald-600" : "text-brand-text-muted"}`}>
                             {bl.dateRetrait ? "Retiré" : "En attente R."}
                           </span>
                         </div>
                       ) : (
-                        <span className="font-bold text-gray-400 italic text-sm">Non confirmé</span>
+                        <span className="font-bold text-brand-text-muted italic text-sm">Non confirmé</span>
                       )}
                     </div>
                   </div>
                 </div>
               )) : (
-                <div className="col-span-full p-12 text-center bg-brand-bg/50 rounded-3xl border border-dashed border-slate-200 text-gray-400 flex flex-col items-center">
+                <div className="col-span-full p-12 text-center bg-brand-bg/50 rounded-3xl border border-dashed border-slate-200 text-brand-text-muted flex flex-col items-center">
                   <ShipWheel className="w-12 h-12 text-gray-300 mb-4" />
                   <p className="text-lg font-bold text-slate-700-muted">Aucun dossier trouvé</p>
                   <p className="text-sm mt-1">Tous les BLs ont été traités.</p>
@@ -519,8 +519,8 @@ export default function Dashboard() {
                 <div className="bg-brand-bg p-6 rounded-full mb-6">
                   <Search className="w-16 h-16 text-gray-200" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-400">Aucun résultat trouvé</h3>
-                <p className="text-gray-400 mt-2 max-w-md">Modifiez votre recherche pour trouver le BL ou le voyage.</p>
+                <h3 className="text-2xl font-bold text-brand-text-muted">Aucun résultat trouvé</h3>
+                <p className="text-brand-text-muted mt-2 max-w-md">Modifiez votre recherche pour trouver le BL ou le voyage.</p>
               </div>
             )
           )}

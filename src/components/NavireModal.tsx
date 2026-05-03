@@ -257,12 +257,12 @@ export default function NavireModal({ onClose, onSuccess }: NavireModalProps) {
                  <button 
                     type="submit" 
                     disabled={isSaving || !nom}
-                    className={`flex-1 py-4 rounded-2xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 text-lg ${
+                    className={`flex-1 py-4 rounded-2xl font-bold text-brand-text shadow-lg transition-all flex items-center justify-center gap-2 text-lg ${
                       editingId ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/25" : "bg-blue-600 hover:bg-blue-700 shadow-blue-600/25"
                     } disabled:opacity-50 disabled:shadow-none hover:-translate-y-0.5 active:translate-y-0`}
                   >
                     {isSaving ? (
-                      <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                      <div className="w-6 h-6 border-3 border-brand-border border-t-white rounded-full animate-spin" />
                     ) : (
                       editingId ? <Edit2 className="w-5 h-5" /> : <Check className="w-6 h-6" />
                     )}

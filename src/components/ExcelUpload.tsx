@@ -118,7 +118,7 @@ export default function ExcelUpload({ onUploadSuccess }: ExcelUploadProps) {
           <p className="mb-2 text-sm text-brand-text-muted">
             <span className="font-semibold">Cliquez pour importer</span> ou glissez-déposez
           </p>
-          <p className="text-xs text-gray-400">Excel (.xlsx, .xls)</p>
+          <p className="text-xs text-brand-text-muted">Excel (.xlsx, .xls)</p>
         </div>
         <input 
           type="file" 

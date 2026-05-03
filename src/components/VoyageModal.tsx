@@ -135,7 +135,7 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
           <form onSubmit={handleSubmit} className="p-4 md:p-8 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:p-6">
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                <label className="text-xs font-bold text-brand-text-muted uppercase tracking-wider flex items-center gap-2">
                   <Ship className="w-3 h-3" /> Navire
                 </label>
                 <select
@@ -154,7 +154,7 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                <label className="text-xs font-bold text-brand-text-muted uppercase tracking-wider flex items-center gap-2">
                   <Hash className="w-3 h-3" /> N° Voyage
                 </label>
                 <input
@@ -167,7 +167,7 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                <label className="text-xs font-bold text-brand-text-muted uppercase tracking-wider flex items-center gap-2">
                   <Calendar className="w-3 h-3" /> ETA
                 </label>
                 <input
@@ -180,7 +180,7 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                <label className="text-xs font-bold text-brand-text-muted uppercase tracking-wider flex items-center gap-2">
                   <Calendar className="w-3 h-3" /> ETD
                 </label>
                 <input
@@ -193,7 +193,7 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                <label className="text-xs font-bold text-brand-text-muted uppercase tracking-wider flex items-center gap-2">
                   <DollarSign className="w-3 h-3" /> Taux du Dollar
                 </label>
                 <input
@@ -238,14 +238,14 @@ export default function VoyageModal({ onClose, onSuccess }: VoyageModalProps) {
             </div>
 
             {voyages.length === 0 ? (
-              <div className="text-center py-8 text-gray-400 text-sm italic bg-brand-bg rounded-2xl">
+              <div className="text-center py-8 text-brand-text-muted text-sm italic bg-brand-bg rounded-2xl">
                 Aucun voyage enregistré
               </div>
             ) : (
               <div className="rounded-2xl overflow-hidden border border-brand-border shadow-sm">
                 <table className="w-full text-left text-sm">
                   <thead>
-                    <tr className="bg-brand-bg text-gray-400 text-[10px] uppercase tracking-widest font-bold">
+                    <tr className="bg-brand-bg text-brand-text-muted text-[10px] uppercase tracking-widest font-bold">
                       <th className="px-4 py-3">Navire</th>
                       <th className="px-4 py-3">Coque</th>
                       <th className="px-4 py-3">N° Voyage</th>

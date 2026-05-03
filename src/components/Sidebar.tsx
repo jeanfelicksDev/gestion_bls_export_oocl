@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   Ship, Anchor, LayoutDashboard, Settings, CalendarPlus,
   ChevronRight, ChevronDown, History, Circle, FilePlus
@@ -99,11 +100,11 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
 
   return (
     <>
-      <aside className="h-full w-72 bg-brand-card/40 backdrop-blur-xl border-r border-white/40 z-50 flex flex-col p-4 md:p-6 shadow-2xl shadow-blue-500/5 overflow-hidden">
+      <aside className="h-full w-72 bg-brand-card/40 backdrop-blur-xl border-r border-brand-border z-50 flex flex-col p-4 md:p-6 shadow-2xl shadow-blue-500/5 overflow-hidden">
         {/* Logo */}
         <div className="flex items-center gap-3 mb-10 px-2 flex-shrink-0">
           <div className="bg-primary p-2.5 rounded-2xl shadow-lg shadow-primary/20 ring-4 ring-primary/5">
-            <Anchor className="w-7 h-7 text-white" />
+            <Anchor className="w-7 h-7 text-brand-text" />
           </div>
           <div>
             <h1 className="text-2xl font-black text-primary tracking-tighter leading-none">OOCL</h1>
@@ -114,26 +115,26 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
         {/* Scrollable nav area */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-1 pr-1 -mr-1">
           {/* Principal */}
-          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 px-3 flex items-center gap-2">
+          <div className="text-[10px] font-bold text-brand-text-muted uppercase tracking-widest mb-3 px-3 flex items-center gap-2">
             <span className="w-4 h-[1px] bg-gray-200"></span> Principal <span className="flex-1 h-[1px] bg-gray-200"></span>
           </div>
 
           <button 
             onClick={() => window.dispatchEvent(new CustomEvent('filter-voyage', { detail: { id: null } }))}
-            className="w-full text-left flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-primary text-white font-bold shadow-xl shadow-primary/20 transition-all border border-white/10 group"
+            className="w-full text-left flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-primary text-white font-bold shadow-xl shadow-primary/20 transition-all border border-brand-border group"
           >
             <LayoutDashboard className="w-5 h-5 group-hover:scale-110 transition-transform" />
             Dashboard
           </button>
 
           {/* Gestion */}
-          <div className="pt-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 px-3 flex items-center gap-2">
+          <div className="pt-6 text-[10px] font-bold text-brand-text-muted uppercase tracking-widest mb-3 px-3 flex items-center gap-2">
             <span className="w-4 h-[1px] bg-gray-200"></span> Gestion <span className="flex-1 h-[1px] bg-gray-200"></span>
           </div>
 
           <button
             onClick={() => setShowNavireModal(true)}
-            className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl text-white font-bold hover:bg-white/10 hover:text-white transition-all border border-transparent group"
+            className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl text-brand-text font-bold hover:bg-brand-surface hover:text-brand-text transition-all border border-transparent group"
           >
             <Ship className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
             Créer Navire
@@ -141,7 +142,7 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
 
           <button
             onClick={() => setShowVoyageModal(true)}
-            className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl text-white font-bold hover:bg-white/10 hover:text-white transition-all border border-transparent group"
+            className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl text-brand-text font-bold hover:bg-brand-surface hover:text-brand-text transition-all border border-transparent group"
           >
             <CalendarPlus className="w-5 h-5 text-orange-400 group-hover:scale-110 transition-transform" />
             Créer Voyage
@@ -149,7 +150,7 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
 
           <button
             onClick={() => setShowAddBlModal(true)}
-            className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl text-white font-bold hover:bg-white/10 hover:text-white transition-all border border-transparent group"
+            className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl text-brand-text font-bold hover:bg-brand-surface hover:text-brand-text transition-all border border-transparent group"
           >
             <FilePlus className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
             Ajouter Bls
@@ -157,19 +158,19 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
 
           <button
             onClick={() => setShowPreBlModal(true)}
-            className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl text-white font-bold hover:bg-white/10 hover:text-white transition-all border border-transparent group"
+            className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl text-brand-text font-bold hover:bg-brand-surface hover:text-brand-text transition-all border border-transparent group"
           >
             <ClipboardList className="w-5 h-5 text-indigo-400 group-hover:scale-110 transition-transform" />
             Pré-Saisie Notes
           </button>
 
           {/* Historique Navire */}
-          <div className="pt-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 px-3 flex items-center gap-2">
+          <div className="pt-6 text-[10px] font-bold text-brand-text-muted uppercase tracking-widest mb-3 px-3 flex items-center gap-2">
             <span className="w-4 h-[1px] bg-gray-200"></span> Historique Navire <span className="flex-1 h-[1px] bg-gray-200"></span>
           </div>
 
           {voyages.length === 0 ? (
-            <p className="text-xs text-gray-400 italic px-5 py-2">Aucun voyage enregistré</p>
+            <p className="text-xs text-brand-text-muted italic px-5 py-2">Aucun voyage enregistré</p>
           ) : (
             <div className="space-y-1">
               {tree.map(({ year, months }) => (
@@ -181,7 +182,7 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
                   >
                     {openYears[year]
                       ? <ChevronDown className="w-4 h-4 text-primary flex-shrink-0 transition-transform" />
-                      : <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform" />}
+                      : <ChevronRight className="w-4 h-4 text-brand-text-muted flex-shrink-0 transition-transform" />}
                     <History className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
                     <span>{year}</span>
                   </button>
@@ -195,11 +196,11 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
                             {/* Month node */}
                             <button
                               onClick={() => toggleMonth(monthKey)}
-                              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/10 transition-all text-white font-semibold text-xs capitalize group"
+                              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-brand-surface transition-all text-brand-text font-semibold text-xs capitalize group"
                             >
                               {openMonths[monthKey]
                                 ? <ChevronDown className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                                : <ChevronRight className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />}
+                                : <ChevronRight className="w-3.5 h-3.5 text-brand-text-muted flex-shrink-0" />}
                               <span>{month}</span>
                               <span className="ml-auto bg-blue-100 text-blue-400 text-[9px] font-black px-1.5 py-0.5 rounded-full">
                                 {mvoyages.length}
@@ -221,13 +222,13 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
                                     <div className="flex items-center gap-2">
                                       <Circle className="w-1.5 h-1.5 text-blue-400 flex-shrink-0 group-hover:text-primary transition-colors" fill="currentColor" />
                                       <span className="font-bold text-[11px] text-brand-text truncate group-hover:text-primary transition-colors">
-                                        {v.navire?.nom ?? "—"} <span className="font-mono text-gray-400">·</span> {v.numero}
+                                        {v.navire?.nom ?? "—"} <span className="font-mono text-brand-text-muted">·</span> {v.numero}
                                       </span>
                                     </div>
                                     <div className="ml-3.5 flex flex-wrap gap-x-2 gap-y-0.5 items-center text-[9px] text-brand-text-muted whitespace-nowrap overflow-hidden">
-                                      <span className="flex-shrink-0 text-orange-400 font-semibold">ETA <span className="font-bold text-white">{formatShort(v.eta)}</span></span>
-                                      <span className="text-gray-500 flex-shrink-0">|</span>
-                                      <span className="flex-shrink-0 text-orange-400 font-semibold">ETD <span className="font-bold text-white">{formatShort(v.etd)}</span></span>
+                                      <span className="flex-shrink-0 text-orange-400 font-semibold">ETA <span className="font-bold text-brand-text">{formatShort(v.eta)}</span></span>
+                                      <span className="text-brand-text-muted flex-shrink-0">|</span>
+                                      <span className="flex-shrink-0 text-orange-400 font-semibold">ETD <span className="font-bold text-brand-text">{formatShort(v.etd)}</span></span>
                                     </div>
                                   </button>
                                 ))}
@@ -246,7 +247,7 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
 
         {/* Footer */}
         <div className="mt-4 space-y-4 flex-shrink-0">
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 font-medium hover:text-brand-text-dim transition-all text-sm">
+          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-brand-text-muted font-medium hover:text-brand-text-dim transition-all text-sm">
             <Settings className="w-4 h-4" />
             Paramètres
           </button>
@@ -262,10 +263,15 @@ export default function Sidebar({ onRefresh }: SidebarProps) {
         </div>
       </aside>
 
-      {showNavireModal && <NavireModal onClose={() => setShowNavireModal(false)} onSuccess={onRefresh} />}
-      {showVoyageModal && <VoyageModal onClose={() => setShowVoyageModal(false)} onSuccess={onRefresh} />}
-      {showAddBlModal && <AddBlModal onClose={() => setShowAddBlModal(false)} onSuccess={onRefresh} />}
-      {showPreBlModal && <PreBlModal onClose={() => setShowPreBlModal(false)} onSuccess={onRefresh} />}
+      {typeof document !== "undefined" && createPortal(
+        <>
+          {showNavireModal && <NavireModal onClose={() => setShowNavireModal(false)} onSuccess={onRefresh} />}
+          {showVoyageModal && <VoyageModal onClose={() => setShowVoyageModal(false)} onSuccess={onRefresh} />}
+          {showAddBlModal && <AddBlModal onClose={() => setShowAddBlModal(false)} onSuccess={onRefresh} />}
+          {showPreBlModal && <PreBlModal onClose={() => setShowPreBlModal(false)} onSuccess={onRefresh} />}
+        </>,
+        document.body
+      )}
     </>
   );
 }
