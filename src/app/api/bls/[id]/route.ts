@@ -1,51 +1,74 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
+import { successResponse, handleApiError } from "@/lib/apiResponse";
+import { logger } from "@/lib/logger";
+import { validators } from "@/lib/validation";
+import { IAutreChargeInput } from "@/lib/types";
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+const CONTEXT = "API_BL_DETAIL";
+
+export async function PATCH(
+  req: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const { id } = await params;
-    const body = await req.json();
+
+    if (!validators.isValidId(id)) {
+      return NextResponse.json({ error: "ID invalide" }, { status: 400 });
+    }
+
+    const body: unknown = await req.json();
+    logger.debug(CONTEXT, "PATCH updating BL", { id, body });
+
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Corps de requête invalide" }, { status: 400 });
+    }
+
+    const data = body as Record<string, unknown>;
 
     // Use a transaction to ensure atomic delete of old charges and creation of new ones
-    const bl = await prisma.$transaction(async (tx: any) => {
+    const bl = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Update the BL itself
       const updatedBl = await tx.bL.update({
         where: { id },
         data: {
-          statut: body.dateRetrait ? "RETIRE" : "EN ATTENTE RETRAIT",
-          dateRetrait: body.dateRetrait ? new Date(body.dateRetrait) : null,
-          pod: body.pod || null,
-          shipper: body.shipper || null,
-          typeConnaissement: body.typeConnaissement || null,
-          tender: body.tender || null,
-          freighting: body.freighting || null,
-          valeurFret: body.valeurFret || null,
-          montantFret: body.montantFret || null,
-          deviseFret: body.deviseFret || null,
-          statutFret: body.statutFret || null,
-          numTimbre: body.numTimbre || null,
-          statutCorrection: body.statutCorrection || null,
-          commentaire: body.commentaire || null,
-          raisonRetour: body.raisonRetour || null,
-          dateRetour: body.dateRetour ? new Date(body.dateRetour) : null,
-          numFactureRetour: body.numFactureRetour || null,
-          isORG: typeof body.isORG !== 'undefined' ? Boolean(body.isORG) : undefined,
-          isNNG: typeof body.isNNG !== 'undefined' ? Boolean(body.isNNG) : undefined,
-          isSWB: typeof body.isSWB !== 'undefined' ? Boolean(body.isSWB) : undefined,
-          isScanne: typeof body.isScanne !== 'undefined' ? Boolean(body.isScanne) : undefined,
-          isNoteTraitee: typeof body.isNoteTraitee !== 'undefined' ? Boolean(body.isNoteTraitee) : undefined,
+          statut: data.dateRetrait ? "RETIRE" : "EN ATTENTE RETRAIT",
+          dateRetrait: data.dateRetrait ? new Date(data.dateRetrait as string) : null,
+          pod: (data.pod as string) || null,
+          shipper: (data.shipper as string) || null,
+          typeConnaissement: (data.typeConnaissement as string) || null,
+          tender: (data.tender as string) || null,
+          freighting: (data.freighting as string) || null,
+          valeurFret: (data.valeurFret as string) || null,
+          montantFret: (data.montantFret as string) || null,
+          deviseFret: (data.deviseFret as string) || null,
+          statutFret: (data.statutFret as string) || null,
+          numTimbre: (data.numTimbre as string) || null,
+          statutCorrection: (data.statutCorrection as string) || null,
+          commentaire: (data.commentaire as string) || null,
+          raisonRetour: (data.raisonRetour as string) || null,
+          dateRetour: data.dateRetour ? new Date(data.dateRetour as string) : null,
+          numFactureRetour: (data.numFactureRetour as string) || null,
+          isORG: typeof data.isORG !== 'undefined' ? Boolean(data.isORG) : undefined,
+          isNNG: typeof data.isNNG !== 'undefined' ? Boolean(data.isNNG) : undefined,
+          isSWB: typeof data.isSWB !== 'undefined' ? Boolean(data.isSWB) : undefined,
+          isScanne: typeof data.isScanne !== 'undefined' ? Boolean(data.isScanne) : undefined,
+          isNoteTraitee: typeof data.isNoteTraitee !== 'undefined' ? Boolean(data.isNoteTraitee) : undefined,
         },
       });
 
       // 2. Refresh charges if provided
-      if (body.autresCharges) {
+      if (data.autresCharges && Array.isArray(data.autresCharges)) {
         // Delete old
         await tx.autreCharge.deleteMany({
           where: { blId: id },
         });
 
         // Create new individually (safer for SQLite transactions)
-        for (const c of body.autresCharges) {
+        for (const item of data.autresCharges) {
+          const c = item as IAutreChargeInput;
           if (c.type) {
             await tx.autreCharge.create({
               data: {
@@ -65,30 +88,37 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       });
     });
 
-    return NextResponse.json(bl);
-  } catch (error: any) {
-    console.error("DEBUG - BL Update Error:", {
-      message: error.message,
-      code: error.code,
-      meta: error.meta,
-      stack: error.stack
-    });
-    return NextResponse.json({ 
-      error: error.message,
-      details: error.meta
-    }, { status: 500 });
+    logger.info(CONTEXT, "BL updated successfully via transaction", { blId: id });
+    return successResponse(bl, "BL mis à jour avec succès");
+  } catch (error) {
+    logger.error(CONTEXT, "PATCH transaction error", error as Error);
+    return handleApiError(CONTEXT, error);
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  req: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const { id } = await params;
+
+    if (!validators.isValidId(id)) {
+      return NextResponse.json({ error: "ID invalide" }, { status: 400 });
+    }
+
+    logger.debug(CONTEXT, "DELETE BL", { id });
+
     await prisma.bL.delete({
       where: { id },
     });
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+
+    logger.info(CONTEXT, "BL deleted successfully", { blId: id });
+    return successResponse({ success: true }, "BL supprimé avec succès");
+  } catch (error) {
+    logger.error(CONTEXT, "DELETE error", error as Error);
+    return handleApiError(CONTEXT, error);
   }
 }
+
 

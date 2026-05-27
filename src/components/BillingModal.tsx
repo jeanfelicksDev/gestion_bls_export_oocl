@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { X, FileDown, Eye, EyeOff, DollarSign, Ship, Calendar, Loader2, AlertCircle, Save, CheckCircle2 } from "lucide-react";
+import { X, FileDown, Eye, EyeOff, DollarSign, Ship, Calendar, Loader2, AlertCircle, Save, CheckCircle2, Receipt } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatAmount, unformatAmount } from "@/lib/utils";
@@ -12,22 +12,21 @@ interface BillingModalProps {
   onClose: () => void;
 }
 
-// Couleurs OOCL
+// OOCL branding colors
 const OOCL_BLUE = [0, 47, 108] as [number, number, number];      // #002F6C
 const OOCL_RED  = [200, 16, 46] as [number, number, number];      // #C8102E
-const LIGHT_BLUE = [235, 241, 251] as [number, number, number];   // En-tête tableau
-const CHARGES_BLUE = [218, 230, 248] as [number, number, number]; // En-tête sous-section charges
-const ROW_ALT = [249, 250, 252] as [number, number, number];      // Lignes alternées
+const LIGHT_BLUE = [235, 241, 251] as [number, number, number];   // Table headers
+const CHARGES_BLUE = [218, 230, 248] as [number, number, number]; // Secondary charges header
+const ROW_ALT = [249, 250, 252] as [number, number, number];      // Alternate rows
 
 export default function BillingModal({ voyage, onClose }: BillingModalProps) {
   const [tauxDollar, setTauxDollar] = useState(voyage.tauxDollar || "600 XOF");
   const [isGenerating, setIsGenerating] = useState(false);
   const [showError, setShowError] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Sauvegarde automatique (Debounce)
+  // Debounced Auto-Save Taux Dollar
   useEffect(() => {
     if (tauxDollar === voyage.tauxDollar) return;
 
@@ -44,7 +43,6 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
         if (res.ok) {
           setSaveStatus("saved");
           setTimeout(() => setSaveStatus("idle"), 2000);
-          // Mettre à jour l'objet voyage local si nécessaire (optionnel car le parent rafraîchira au besoin)
           voyage.tauxDollar = tauxDollar;
         } else {
           setSaveStatus("error");
@@ -90,7 +88,6 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
   const activeColumns = ["Taxe de Port", ...otherChargeTypes].filter(c => visibleColumns[c]);
 
   const handleGeneratePDF = async () => {
-    // Nettoyage de la saisie pour voir s'il y a un chiffre
     const rawVal = tauxDollar.replace(/[^0-9.]/g, "");
     if (hasUSD && (!rawVal || parseFloat(rawVal) <= 0)) {
       setShowError(true);
@@ -102,27 +99,25 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
       const { default: autoTable } = await import("jspdf-autotable");
 
       const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-      const pageWidth = doc.internal.pageSize.getWidth();  // 297mm
+      const pageWidth = doc.internal.pageSize.getWidth();
       const margin = 12;
       let y = margin;
 
-      // ════════════════════════════════════════════════════════
-      //  BANNIÈRE OOCL (bande bleue pleine largeur)
-      // ════════════════════════════════════════════════════════
+      // Header block banner (full width)
       doc.setFillColor(...OOCL_BLUE);
       doc.rect(0, 0, pageWidth, 22, "F");
 
-      // Trait rouge accent
+      // Red highlight accent line
       doc.setFillColor(...OOCL_RED);
       doc.rect(0, 22, pageWidth, 1.5, "F");
 
-      // Titre dans la bannière
+      // PDF Title
       doc.setFont("helvetica", "bold");
       doc.setFontSize(24);
       doc.setTextColor(255, 255, 255);
       doc.text("TABLEAU DE FACTURATION", pageWidth / 2, 15, { align: "center" });
 
-      // Sous-titre voyage à droite de la bannière
+      // Sub-heading
       doc.setFontSize(13);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(180, 200, 240);
@@ -130,16 +125,14 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
 
       y = 30;
 
-      // ════════════════════════════════════════════════════════
-      //  BLOC INFOS (3 colonnes)
-      // ════════════════════════════════════════════════════════
+      // Metadata Info (3 Columns)
       doc.setTextColor(0, 0, 0);
       const labelGray: [number, number, number] = [100, 100, 100];
       const col1x = margin;
       const col2x = margin + 80;
       const col3x = margin + 165;
 
-      // -- Colonne 1 : Navire
+      // Col 1: Ship
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
       doc.setTextColor(...labelGray);
@@ -149,7 +142,7 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
       doc.setTextColor(0, 0, 0);
       doc.text(voyage.navire?.nom || "-", col1x, y + 8);
 
-      // -- Colonne 2 : Voyage + ETD
+      // Col 2: Voyage + ETD
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
       doc.setTextColor(...labelGray);
@@ -168,7 +161,7 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
       doc.setTextColor(0, 0, 0);
       doc.text(voyage.etd ? format(new Date(voyage.etd), "dd/MM/yyyy") : "-", col2x + 40, y + 8);
 
-      // -- Colonne 3 : Taux Dollar (accentué)
+      // Col 3: Dollar Rate (accent)
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
       doc.setTextColor(...labelGray);
@@ -178,22 +171,18 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
       doc.setTextColor(...OOCL_RED);
       doc.text(formatAmount(tauxDollar), col3x, y + 9);
 
-      // Ligne de séparation
       y += 22;
       doc.setDrawColor(220, 225, 235);
       doc.setLineWidth(0.4);
       doc.line(margin, y, pageWidth - margin, y);
       y += 6;
 
-      // ════════════════════════════════════════════════════════
-      //  CALCUL DES LARGEURS DE COLONNES
-      // ════════════════════════════════════════════════════════
+      // Column widths calculations
       const availWidth = pageWidth - margin * 2;
-      const minBookingWidth = 34; // Minimum width for Booking
-      const minShipperWidth = 58; // Minimum width for Shipper
-      const minChargeWidth = 22;  // Minimum width for each charge column
+      const minBookingWidth = 34;
+      const minShipperWidth = 58;
+      const minChargeWidth = 22;
 
-      // Calculate max content width for Booking and Shipper
       doc.setFont("courier", "bold");
       doc.setFontSize(13);
       const maxBookingContentWidth = Math.max(
@@ -208,19 +197,16 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
         ...voyage.bls.map((bl: any) => doc.getTextWidth(bl.shipper || ""))
       );
 
-      // Calculate max content width for each active charge column
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
       const chargeContentWidths = activeColumns.map(col => {
         const headerWidth = doc.getTextWidth(col.toUpperCase());
-        // For 'Taxe de Port', content is 'X'
         if (col === "Taxe de Port") {
-          doc.setFontSize(13); // Body font size for 'X'
+          doc.setFontSize(13);
           const contentWidth = doc.getTextWidth("X");
           return Math.max(headerWidth, contentWidth);
         } else {
-          // For other charges, content is the amount
-          doc.setFontSize(13); // Body font size for amounts
+          doc.setFontSize(13);
           const maxAmountWidth = Math.max(
             ...voyage.bls.map((bl: any) => {
               const charge = bl.autresCharges?.find((c: any) => c.type === col);
@@ -231,25 +217,21 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
         }
       });
 
-      // Add some padding to content widths
-      const PADDING = 6; // 3mm on each side
+      const PADDING = 6;
       const bookingWidth = Math.max(minBookingWidth, maxBookingContentWidth + PADDING);
       const shipperWidth = Math.max(minShipperWidth, maxShipperContentWidth + PADDING);
       const chargeWidths = chargeContentWidths.map(w => Math.max(minChargeWidth, w + PADDING));
 
       const totalCalculatedWidth = bookingWidth + shipperWidth + chargeWidths.reduce((sum, w) => sum + w, 0);
 
-      // Distribute remaining space if available, or shrink proportionally if over
       let finalBookingWidth = bookingWidth;
       let finalShipperWidth = shipperWidth;
       let finalChargeWidths = [...chargeWidths];
 
       if (totalCalculatedWidth < availWidth) {
         const remainingSpace = availWidth - totalCalculatedWidth;
-        // Distribute remaining space to shipper column
         finalShipperWidth += remainingSpace;
       } else if (totalCalculatedWidth > availWidth) {
-        // If total width exceeds available, shrink proportionally
         const scaleFactor = availWidth / totalCalculatedWidth;
         finalBookingWidth *= scaleFactor;
         finalShipperWidth *= scaleFactor;
@@ -269,9 +251,6 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
         };
       });
 
-      // ════════════════════════════════════════════════════════
-      //  DONNÉES DU TABLEAU
-      // ════════════════════════════════════════════════════════
       const body: any[][] = voyage.bls.map((bl: any) => {
         const row: any[] = ["OOLU" + (bl.booking || ""), bl.shipper || "-"];
         activeColumns.forEach(col => {
@@ -285,15 +264,9 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
         return row;
       });
 
-      // On ne rajoute plus de lignes vides (à la demande de l'utilisateur)
-
-      // ════════════════════════════════════════════════════════
-      //  AUTOMAP — DOUBLE EN-TÊTE GROUPÉ
-      // ════════════════════════════════════════════════════════
       autoTable(doc, {
         startY: y,
         head: [
-          // rang 1 : colonnes fixes + groupe CHARGES
           [
             { content: "N°BLS", rowSpan: 2, styles: { valign: "middle", halign: "left", fontStyle: "bold", fontSize: 12 } },
             { content: "SHIPPER", rowSpan: 2, styles: { valign: "middle", halign: "left", fontStyle: "bold", fontSize: 12 } },
@@ -311,7 +284,6 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
                 }]
               : []),
           ],
-          // rang 2 : sous-colonnes des charges
           activeColumns.map(col => ({
             content: col.toUpperCase(),
             styles: {
@@ -327,7 +299,6 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
         body,
         columnStyles,
         margin: { left: margin, right: margin },
-        // Styles généraux
         styles: {
           fontSize: 10,
           cellPadding: { top: 3, bottom: 3, left: 2, right: 2 },
@@ -345,7 +316,6 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
           lineWidth: 0.3,
           lineColor: [180, 200, 230] as [number, number, number],
         },
-        // Lignes alternées
         didParseCell: (data) => {
           if (data.section === "body" && data.row.index % 2 === 0) {
             data.cell.styles.fillColor = [255, 255, 255];
@@ -353,16 +323,12 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
             data.cell.styles.fillColor = ROW_ALT;
           }
         },
-        // Bordure extérieure plus marquée
         tableLineWidth: 0.5,
         tableLineColor: [160, 180, 210] as [number, number, number],
       });
 
-      // ════════════════════════════════════════════════════════
-      //  PIED DE PAGE
-      // ── Pied de page ───────────────────────────────────────────────
-      const finalY = (doc as any).lastAutoTable.finalY + 9; // 6 * 1.5
-      doc.setFontSize(11.25); // 7.5 * 1.5
+      const finalY = (doc as any).lastAutoTable.finalY + 9;
+      doc.setFontSize(11.25);
       doc.setFont("helvetica", "italic");
       doc.setTextColor(150, 155, 165);
       doc.text(
@@ -374,11 +340,9 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
       doc.setTextColor(...OOCL_BLUE);
       doc.text("OOCL — BL Tracking System", pageWidth - margin, finalY, { align: "right" });
 
-      // Trait bleu en bas
       doc.setFillColor(...OOCL_BLUE);
       doc.rect(0, doc.internal.pageSize.getHeight() - 3, pageWidth, 3, "F");
 
-      // ── Téléchargement ─────────────────────────────────────────────
       const navire = (voyage.navire?.nom || "voyage").replace(/\s+/g, "_");
       const numero = (voyage.numero || "").replace(/\s+/g, "_");
       const date = voyage.etd ? format(new Date(voyage.etd), "ddMMyyyy") : "nd";
@@ -394,172 +358,168 @@ export default function BillingModal({ voyage, onClose }: BillingModalProps) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-brand-card rounded-[2rem] w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-brand-border">
+      <div className="bg-brand-card rounded-[2rem] w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-brand-border">
 
-        {/* ── Header ── */}
-        <div className="p-4 md:p-8 border-b border-brand-border bg-gradient-to-r from-gray-50 to-white flex justify-between items-center flex-shrink-0">
-          <div className="flex items-center gap-4 md:p-6">
-            <div className="bg-primary/10 p-4 rounded-2xl">
-              <Ship className="w-8 h-8 text-primary" />
+        {/* --- Header --- */}
+        <div className="p-5 md:p-6 border-b border-brand-border bg-brand-surface/30 flex justify-between items-center flex-shrink-0">
+          <div className="flex items-center gap-4">
+            <div className="bg-primary/10 p-3 rounded-2xl text-primary animate-pulse-ring">
+              <Receipt className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-2xl font-black text-gray-900 tracking-tight">Tableau de Facturation</h2>
-              <div className="flex items-center gap-4 mt-1 text-brand-text-muted font-medium">
-                <span className="flex items-center gap-2 text-sm"><Ship className="w-4 h-4" /> {voyage.navire?.nom} {voyage.numero}</span>
-                <span className="flex items-center gap-2 text-sm"><Calendar className="w-4 h-4" /> ETD : {voyage.etd ? format(new Date(voyage.etd), "dd/MM/yyyy") : "-"}</span>
+              <h2 className="text-xl font-black text-brand-text tracking-tight">Panneau de Facturation</h2>
+              <div className="flex items-center gap-3 mt-0.5 text-brand-text-muted font-bold text-xs">
+                <span className="flex items-center gap-1.5 uppercase"><Ship className="w-4 h-4 text-primary" /> {voyage.navire?.nom} {voyage.numero}</span>
+                <span className="opacity-40">|</span>
+                <span className="flex items-center gap-1.5 uppercase"><Calendar className="w-4 h-4 text-secondary" /> ETD : {voyage.etd ? format(new Date(voyage.etd), "dd/MM/yyyy") : "-"}</span>
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="p-3 hover:bg-gray-100 rounded-2xl transition-all text-brand-text-muted">
-            <X className="w-6 h-6" />
+          <button onClick={onClose} className="p-2 hover:bg-brand-surface rounded-full transition-all text-brand-text-muted active:scale-95">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* ── Controls ── */}
-        <div className="px-8 py-5 bg-brand-bg/70 border-b border-brand-border flex-shrink-0">
-          <div className="flex flex-wrap items-end gap-4 md:p-8">
-            {/* Taux dollar */}
-            <div className="space-y-1.5 relative">
+        {/* --- Controls --- */}
+        <div className="px-6 py-5 bg-brand-surface/20 border-b border-brand-border flex-shrink-0">
+          <div className="flex flex-col md:flex-row items-stretch md:items-end gap-5">
+            {/* Dollar exchange input */}
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest flex items-center gap-1.5">
-                  <DollarSign className="w-3 h-3" /> Taux du Dollar
+                <label className="text-[9px] font-black text-brand-text-muted uppercase tracking-widest flex items-center gap-1">
+                  <DollarSign className="w-3.5 h-3.5 text-red-500" /> Taux du Dollar
                 </label>
                 {saveStatus === "saving" && (
-                  <span className="flex items-center gap-1 text-[9px] font-bold text-amber-500 animate-pulse">
+                  <span className="flex items-center gap-1 text-[8px] font-black text-amber-500 animate-pulse">
                     <Loader2 className="w-2.5 h-2.5 animate-spin" /> Sauvegarde...
                   </span>
                 )}
                 {saveStatus === "saved" && (
-                  <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-500">
+                  <span className="flex items-center gap-1 text-[8px] font-black text-emerald-500">
                     <CheckCircle2 className="w-2.5 h-2.5" /> Enregistré
                   </span>
                 )}
                 {saveStatus === "error" && (
-                  <span className="flex items-center gap-1 text-[9px] font-bold text-red-500">
+                  <span className="flex items-center gap-1 text-[8px] font-black text-red-500">
                     <AlertCircle className="w-2.5 h-2.5" /> Erreur
                   </span>
                 )}
               </div>
               <input
                 type="text"
-                className="px-6 py-3 rounded-2xl border-2 border-brand-border focus:border-primary focus:ring-8 focus:ring-primary/5 outline-none font-black text-red-600 bg-brand-card w-48 text-base shadow-sm transition-all"
+                className="px-4 py-2.5 rounded-xl border-2 border-brand-border-highlight focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none font-black text-red-500 bg-brand-card w-44 text-sm shadow-sm transition-all text-center"
                 value={formatAmount(tauxDollar)}
                 onChange={(e) => setTauxDollar(unformatAmount(e.target.value))}
-                placeholder="Ex: 600 XOF"
+                placeholder="Ex : 600 XOF"
               />
             </div>
 
-            {/* Colonnes */}
+            {/* Display column toggles */}
             <div className="space-y-1.5 flex-1">
-              <label className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest">Colonnes affichées</label>
-              <div className="flex flex-wrap gap-2">
+              <label className="text-[9px] font-black text-brand-text-muted uppercase tracking-widest">Charges affichées dans l'export</label>
+              <div className="flex flex-wrap gap-1.5">
                 {["Taxe de Port", ...otherChargeTypes].map(col => (
                   <button
                     key={col}
                     onClick={() => toggleColumn(col)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all border ${
                       visibleColumns[col]
                         ? "bg-primary/10 border-primary/20 text-primary"
-                        : "bg-brand-card border-brand-border-highlight text-brand-text-muted"
+                        : "bg-brand-card border-brand-border text-brand-text-muted hover:border-brand-border-highlight"
                     }`}
                   >
-                    {visibleColumns[col] ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                    {visibleColumns[col] ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5 opacity-60" />}
                     {col}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Bouton PDF */}
+            {/* Download PDF button */}
             <button
               onClick={handleGeneratePDF}
               disabled={isGenerating}
-              className="bg-[#002F6C] text-brand-text px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-[#003d8f] transition-all shadow-lg shadow-blue-900/20 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="bg-slate-800 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md shadow-emerald-500/5 disabled:opacity-60 border border-transparent"
             >
-              {isGenerating
-                ? <><Loader2 className="w-5 h-5 animate-spin" /> Génération...</>
-                : <><FileDown className="w-5 h-5" /> Télécharger PDF</>
-              }
+              {isGenerating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileDown className="w-4 h-4" />
+              )}
+              Télécharger l'acte PDF
             </button>
           </div>
         </div>
 
-        {/* ── Aperçu tableau ── */}
-        <div className="flex-1 overflow-auto p-4 md:p-6">
-          <p className="text-[11px] text-brand-text-muted mb-3 font-medium italic">
-            Aperçu — format A4 paysage avec colonnes charges réduites
-          </p>
-          <table className="w-full border-collapse text-sm border border-blue-200/60">
-            <thead>
-              {activeColumns.length > 0 && (
-                <tr>
-                  <th className="border border-blue-200/60 px-4 py-2.5 text-left text-[10px] font-black text-[#002F6C] uppercase bg-[#EBF1FB]" rowSpan={2}>N°BLS</th>
-                  <th className="border border-blue-200/60 px-4 py-2.5 text-left text-[10px] font-black text-[#002F6C] uppercase bg-[#EBF1FB]" rowSpan={2}>Shipper</th>
-                  <th className="border border-blue-200/60 px-2 py-2 text-center text-[10px] font-black text-[#002F6C] uppercase bg-[#DAE6F8]" colSpan={activeColumns.length}>
-                    Charges
-                  </th>
+        {/* --- Preview list --- */}
+        <div className="flex-1 overflow-auto p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+            <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-wider">
+              Aperçu du tableau de facturation (Format d'édition)
+            </p>
+          </div>
+          
+          <div className="border border-brand-border rounded-2xl overflow-hidden shadow-lg shadow-black/5 bg-brand-card">
+            <table className="w-full text-left text-xs whitespace-nowrap border-collapse">
+              <thead>
+                <tr className="bg-brand-surface/40 text-brand-text-muted font-black uppercase tracking-widest text-[9px] border-b border-brand-border">
+                  <th className="px-5 py-3">N° Booking</th>
+                  <th className="px-5 py-3">Shipper (Chargeur)</th>
+                  {activeColumns.map(col => (
+                    <th key={col} className="px-4 py-3 text-center text-brand-text font-black uppercase whitespace-nowrap bg-brand-surface/20">
+                      {col}
+                    </th>
+                  ))}
                 </tr>
-              )}
-              <tr className="bg-[#EBF1FB]">
-                {activeColumns.length === 0 && (
-                  <>
-                    <th className="border border-blue-200/60 px-4 py-2.5 text-[10px] font-black text-[#002F6C] uppercase text-left">N°BLS</th>
-                    <th className="border border-blue-200/60 px-4 py-2.5 text-[10px] font-black text-[#002F6C] uppercase text-left">Shipper</th>
-                  </>
-                )}
-                {activeColumns.map(col => (
-                  <th key={col} className="border border-blue-200/60 px-2 py-2 text-center text-[10px] font-black text-blue-400 uppercase bg-[#DAE6F8] whitespace-nowrap">
-                    {col}
-                  </th>
+              </thead>
+              <tbody className="divide-y divide-brand-border">
+                {voyage.bls.map((bl: any, i: number) => (
+                  <tr key={bl.id} className="hover:bg-brand-surface/10 transition-colors">
+                    <td className="px-5 py-3 font-mono font-black text-brand-text text-xs whitespace-nowrap">OOLU{bl.booking}</td>
+                    <td className="px-5 py-3 text-brand-text-dim font-bold truncate max-w-xs">{bl.shipper || <span className="italic opacity-50 font-normal">Sans chargeur</span>}</td>
+                    {activeColumns.map(col => {
+                      let val = "";
+                      if (col === "Taxe de Port") val = "X";
+                      else {
+                        const charge = bl.autresCharges?.find((c: any) => c.type === col);
+                        val = formatAmount(charge?.montant) || "";
+                      }
+                      return (
+                        <td key={col} className="px-4 py-3 text-center font-black text-brand-text font-mono text-xs">
+                          {val || "—"}
+                        </td>
+                      );
+                    })}
+                  </tr>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              {voyage.bls.map((bl: any, i: number) => (
-                <tr key={bl.id} className={i % 2 === 0 ? "bg-brand-card" : "bg-[#F9FAFC]"}>
-                  <td className="border border-blue-100 px-4 py-3 font-mono font-bold text-brand-text text-[11px] whitespace-nowrap">OOLU{bl.booking}</td>
-                  <td className="border border-blue-100 px-4 py-3 text-brand-text-dim text-[11px] truncate max-w-xs">{bl.shipper || "-"}</td>
-                  {activeColumns.map(col => {
-                    let val = "";
-                    if (col === "Taxe de Port") val = "X";
-                    else {
-                      const charge = bl.autresCharges?.find((c: any) => c.type === col);
-                      val = formatAmount(charge?.montant) || "";
-                    }
-                    return (
-                      <td key={col} className="border border-blue-100 px-2 py-3 text-center font-bold text-blue-400 text-[11px] whitespace-nowrap">
-                        {val}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      {/* Modal d'erreur Taux Dollar */}
+      {/* USD Missing Error Modal */}
       {showError && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-brand-card rounded-[2.5rem] p-4 md:p-8 max-w-md w-full shadow-2xl border border-red-50 animate-in zoom-in-95 duration-200">
-            <div className="flex flex-col items-center text-center gap-4 md:p-6">
-              <div className="bg-red-50 p-5 rounded-full ring-8 ring-red-50/50">
-                <AlertCircle className="w-12 h-12 text-red-500" />
+          <div className="bg-brand-card rounded-3xl p-6 max-w-md w-full shadow-2xl border border-brand-border animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center gap-4">
+              <div className="bg-red-500/10 p-4 rounded-full ring-8 ring-red-500/5">
+                <AlertCircle className="w-10 h-10 text-red-500" />
               </div>
               <div>
-                <h3 className="text-xl font-black text-gray-900 mb-2 font-mono">TAUX DOLLAR REQUIS</h3>
-                <p className="text-brand-text-muted text-sm font-bold leading-relaxed">
-                  Certains BLs de ce voyage ont un fret exprimé en <span className="text-red-500 font-black">USD</span>.<br/> 
-                  Le champ <span className="text-primary font-black uppercase">"Taux du Dollar"</span> doit obligatoirement être renseigné pour convertir ces montants dans le PDF.
+                <h3 className="text-base font-black text-brand-text mb-1 uppercase tracking-wider">Taux dollar obligatoire</h3>
+                <p className="text-brand-text-muted text-xs font-semibold leading-relaxed">
+                  Certains connaissements de ce voyage possèdent un fret libellé en <span className="text-red-500 font-bold">USD</span>.<br/> 
+                  Vous devez obligatoirement saisir le taux de change du dollar pour permettre la conversion en XOF dans l'acte PDF.
                 </p>
               </div>
               <button 
                 type="button"
                 onClick={() => setShowError(false)}
-                className="w-full bg-slate-900 text-brand-text py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-800 transition-all active:scale-95 shadow-xl shadow-black/50"
+                className="w-full bg-slate-800 hover:bg-slate-700 text-white py-3.5 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-black/20"
               >
-                Compris, je vais le renseigner
+                Je renseigne le taux
               </button>
             </div>
           </div>

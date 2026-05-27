@@ -1,56 +1,87 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
+import { successResponse, handleApiError } from "@/lib/apiResponse";
+import { logger } from "@/lib/logger";
+import { validators } from "@/lib/validation";
+import { IBLInput } from "@/lib/types";
 
-export async function POST(req: Request) {
+const CONTEXT = "API_BLS_BATCH";
+
+export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body: unknown = await req.json();
+    logger.debug(CONTEXT, "POST batch create/update BLs");
     
-    if (!body.bls || !Array.isArray(body.bls)) {
+    if (!body || typeof body !== "object" || !("bls" in body)) {
+      return NextResponse.json({ error: "Corps de requête invalide" }, { status: 400 });
+    }
+
+    const { bls, voyageId } = body as { bls: unknown; voyageId?: string | null };
+
+    if (!bls || !Array.isArray(bls)) {
       return NextResponse.json({ error: "Un tableau de BLs est requis" }, { status: 400 });
     }
 
-    const voyageId = body.voyageId || null;
-    const bls = body.bls;
+    if (voyageId && !validators.isValidId(voyageId)) {
+      return NextResponse.json({ error: "ID de voyage invalide" }, { status: 400 });
+    }
     
     let successCount = 0;
     
     // We process sequentially to ensure reliable upserts on SQLite/Neon
     for (const item of bls) {
-       if (!item.booking) continue;
+       const bl = item as IBLInput;
+       if (!bl.booking) continue;
        
-       const bookingStr = String(item.booking).trim().toUpperCase();
+       const bookingStr = String(bl.booking).trim().toUpperCase();
        if (bookingStr.length < 3) continue;
 
-       const data: any = {
-         voyageId: voyageId,
-         pod: item.pod ? String(item.pod).trim() : undefined,
-         shipper: item.shipper ? String(item.shipper).trim() : undefined,
-         valeurFret: item.valeurFret ? String(item.valeurFret).trim() : undefined,
-         montantFret: item.montantFret ? String(item.montantFret).trim() : undefined,
-         statutCorrection: item.statutCorrection ? String(item.statutCorrection).trim() : undefined,
-         statutFret: item.statutFret ? String(item.statutFret).trim() : undefined,
-         numTimbre: item.numTimbre ? String(item.numTimbre).trim() : undefined,
-         dateRetrait: item.dateRetrait ? new Date(item.dateRetrait) : undefined,
-         statut: item.dateRetrait ? "RETIRE" : undefined,
-         commentaire: (item.commentaire && String(item.commentaire).trim() !== "") ? String(item.commentaire).trim() : undefined,
+       // Define static create/update structures to keep strict type-safety
+       const updateData: Prisma.BLUpdateInput = {
+         voyageId: voyageId || null,
+         pod: bl.pod ? String(bl.pod).trim() : undefined,
+         shipper: bl.shipper ? String(bl.shipper).trim() : undefined,
+         valeurFret: bl.valeurFret ? String(bl.valeurFret).trim() : undefined,
+         montantFret: bl.montantFret ? String(bl.montantFret).trim() : undefined,
+         statutCorrection: bl.statutCorrection ? String(bl.statutCorrection).trim() : undefined,
+         statutFret: bl.statutFret ? String(bl.statutFret).trim() : undefined,
+         numTimbre: bl.numTimbre ? String(bl.numTimbre).trim() : undefined,
+         dateRetrait: bl.dateRetrait ? new Date(bl.dateRetrait as string) : undefined,
+         statut: bl.dateRetrait ? "RETIRE" : undefined,
+         commentaire: (bl.commentaire && String(bl.commentaire).trim() !== "") ? String(bl.commentaire).trim() : undefined,
+       };
+
+       const createData: Prisma.BLCreateInput = {
+         booking: bookingStr,
+         voyageId: voyageId || null,
+         pod: bl.pod ? String(bl.pod).trim() : null,
+         shipper: bl.shipper ? String(bl.shipper).trim() : null,
+         valeurFret: bl.valeurFret ? String(bl.valeurFret).trim() : "",
+         montantFret: bl.montantFret ? String(bl.montantFret).trim() : "",
+         statutCorrection: bl.statutCorrection ? String(bl.statutCorrection).trim() : "",
+         statutFret: bl.statutFret ? String(bl.statutFret).trim() : "",
+         numTimbre: bl.numTimbre ? String(bl.numTimbre).trim() : "",
+         dateRetrait: bl.dateRetrait ? new Date(bl.dateRetrait as string) : null,
+         statut: bl.dateRetrait ? "RETIRE" : "EN ATTENTE RETRAIT",
+         commentaire: (bl.commentaire && String(bl.commentaire).trim() !== "") ? String(bl.commentaire).trim() : null,
        };
 
        await prisma.bL.upsert({
          where: { booking: bookingStr },
-         update: data,
-         create: {
-           booking: bookingStr,
-           ...data
-         }
+         update: updateData,
+         create: createData,
        });
        
        successCount++;
     }
 
-    return NextResponse.json({ success: true, count: successCount });
+    logger.info(CONTEXT, `Successfully upserted ${successCount} BLs in batch`);
+    return successResponse({ success: true, count: successCount }, `${successCount} BLs traités en lot`);
     
-  } catch (error: any) {
-    console.error("API Error (BL Batch Creation):", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    logger.error(CONTEXT, "POST batch error", error as Error);
+    return handleApiError(CONTEXT, error);
   }
 }
+

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { X, Save, FilePlus, Upload, Plus, Trash2, Calendar, FileCheck, AlertCircle } from "lucide-react";
+import { X, Save, FilePlus, Upload, Plus, Trash2, Calendar, FileCheck, AlertCircle, ShipWheel, Loader2 } from "lucide-react";
 import * as xlsx from "xlsx";
 import { format } from "date-fns";
 import StatusBadge from "./StatusBadge";
@@ -16,18 +16,18 @@ interface VoyageItem {
 }
 
 interface BlData {
-  id: string; // purely for frontend mapping
+  id: string;
   booking: string;
   statut: string;
   pod: string;
   shipper: string;
-  valeurFret: string;      // Rate(Liste)
-  montantFret: string;     // Fret ABN (Montant)
-  statutCorrection: string;// Statut BL(liste)
-  statutFret: string;      // Statut Fret
-  numTimbre: string;       // Timbre
-  dateRetrait: string;     // D.Retrait
-  commentaire: string;     // Commentaire
+  valeurFret: string;
+  montantFret: string;
+  statutCorrection: string;
+  statutFret: string;
+  numTimbre: string;
+  dateRetrait: string;
+  commentaire: string;
 }
 
 interface AddBlModalProps {
@@ -52,7 +52,14 @@ export default function AddBlModal({ onClose, onSuccess }: AddBlModalProps) {
       const res = await fetchSync("/api/voyages");
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data)) setVoyages(data);
+        const voyagesList = Array.isArray(data)
+          ? data
+          : (data && typeof data === "object" && Array.isArray(data.data)
+            ? data.data
+            : (data && typeof data === "object" && data.data && typeof data.data === "object" && Array.isArray((data.data as any).data)
+              ? (data.data as any).data
+              : []));
+        setVoyages(voyagesList);
       }
     } catch (e) {
       console.error(e);
@@ -96,7 +103,7 @@ export default function AddBlModal({ onClose, onSuccess }: AddBlModalProps) {
     }));
   };
 
-  const parseExcelDate = (excelDate: any) => {
+  const parseExcelDate = (excelDate: unknown): string => {
     if (!excelDate) return "";
     if (typeof excelDate === 'number') {
       const d = new Date(Math.round((excelDate - 25569) * 86400 * 1000));
@@ -117,15 +124,20 @@ export default function AddBlModal({ onClose, onSuccess }: AddBlModalProps) {
     reader.onload = (evt) => {
       try {
         const bstr = evt.target?.result;
+        if (!bstr || typeof bstr !== "string") {
+          throw new Error("Impossible de lire le fichier");
+        }
+
         const wb = xlsx.read(bstr, { type: "binary" });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
-        const data = xlsx.utils.sheet_to_json<any>(ws, { header: 1 });
+        
+        const data = xlsx.utils.sheet_to_json(ws, { header: 1 }) as (string | number | undefined | null)[][];
 
         if (data.length < 2) return;
 
-        const headers = data[0].map((h: any) => String(h || "").trim().toUpperCase());
-        const getCol = (names: string[]) => headers.findIndex((h: string) => names.some(n => h.includes(n.toUpperCase())));
+        const headers = data[0].map((h) => String(h || "").trim().toUpperCase());
+        const getCol = (names: string[]) => headers.findIndex((h) => names.some(n => h.includes(n.toUpperCase())));
 
         const cBkg = getCol(["Booking", "BKG"]);
         const cPod = getCol(["POD"]);
@@ -196,7 +208,7 @@ export default function AddBlModal({ onClose, onSuccess }: AddBlModalProps) {
         onClose();
       } else {
         const data = await res.json();
-        alert("Erreur: " + (data.error || "Impossible de sauvegarder"));
+        alert("Erreur : " + (data.error || "Impossible de sauvegarder"));
       }
     } catch (err) {
       console.error(err);
@@ -207,42 +219,43 @@ export default function AddBlModal({ onClose, onSuccess }: AddBlModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-4 md:p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="bg-brand-card rounded-[2.5rem] w-full max-w-7xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[92vh] border border-brand-border">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+      <div className="bg-brand-card rounded-[2.5rem] w-full max-w-6xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[92vh] border border-brand-border">
         
         {/* Header */}
-        <div className="px-10 py-8 border-b border-brand-border flex justify-between items-center bg-brand-card sticky top-0 z-20">
-          <div className="flex items-center gap-4 md:p-6">
-            <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-3xl flex items-center justify-center shadow-inner ring-4 ring-emerald-50/50">
-              <FilePlus className="w-7 h-7" />
+        <div className="p-5 md:p-6 border-b border-brand-border flex justify-between items-center bg-brand-surface/30 sticky top-0 z-20">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center animate-pulse-ring">
+              <FilePlus className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-3xl font-black text-brand-text tracking-tighter">
-                Importation de BLs
+              <h2 className="text-xl font-black text-brand-text tracking-tight">
+                Importation de Connaissements
               </h2>
-              <div className="flex items-center gap-2 mt-1">
-                <p className="text-xs font-bold text-brand-text-muted uppercase tracking-widest">
-                  {bls.length} BLs dans la file d'attente
+              <div className="flex items-center gap-2 mt-0.5 font-bold">
+                <p className="text-[10px] text-brand-text-muted uppercase tracking-wider">
+                  {bls.length} BLs en attente d'enregistrement
                 </p>
                 {importSuccess && (
-                  <span className="flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-black animate-bounce">
+                  <span className="flex items-center gap-1 text-[8px] bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full font-black animate-bounce border border-emerald-500/20">
                     <FileCheck className="w-3 h-3" /> IMPORT RÉUSSI
                   </span>
                 )}
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="p-4 text-slate-300 hover:text-brand-text-dim hover:bg-brand-bg rounded-full transition-all active:scale-95">
-            <X className="w-8 h-8" />
+          <button onClick={onClose} className="p-2 hover:bg-brand-surface rounded-full transition-all active:scale-95 text-brand-text-muted">
+            <X className="w-5 h-5" />
           </button>
         </div>
         
-        <div className="flex-1 overflow-hidden p-4 md:p-8 bg-brand-bg/30 flex flex-col gap-4 md:p-6">
-          <div className="grid grid-cols-12 gap-4 md:p-6 items-end">
-            <div className="col-span-12 lg:col-span-7">
-              <label className="block text-[10px] font-black text-brand-text-muted uppercase tracking-[0.2em] mb-3 ml-1">Sélection du Voyage Destination</label>
+        <div className="flex-1 overflow-hidden p-6 md:p-8 bg-brand-bg/10 flex flex-col gap-6">
+          <div className="grid grid-cols-12 gap-4 items-end bg-brand-card p-5 rounded-2xl border border-brand-border">
+            {/* Voyage selector */}
+            <div className="col-span-12 lg:col-span-7 space-y-1.5">
+              <label className="block text-[9px] font-black text-brand-text-muted uppercase tracking-widest ml-1">Sélection du Voyage Destination</label>
               <select 
-                className="w-full px-6 py-4 rounded-3xl border-2 border-brand-border bg-brand-card focus:bg-brand-card focus:border-emerald-500 focus:ring-8 focus:ring-emerald-500/5 transition-all font-black text-brand-text text-sm shadow-sm"
+                className="w-full px-4 py-2.5 rounded-xl border-2 border-brand-border-highlight bg-brand-card focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-black text-brand-text text-sm shadow-sm"
                 value={selectedVoyageId}
                 onChange={(e) => setSelectedVoyageId(e.target.value)}
                 required
@@ -250,72 +263,135 @@ export default function AddBlModal({ onClose, onSuccess }: AddBlModalProps) {
                 <option value="">— Veuillez choisir un navire et un voyage —</option>
                 {voyages.map(v => (
                   <option key={v.id} value={v.id}>
-                    {v.navire?.nom || "—"} - Voyage {v.numero} | ETD: {v.etd ? format(new Date(v.etd), "dd/MM/yyyy") : "Non défini"}
+                    {v.navire?.nom || "—"} - Voyage {v.numero} | ETD : {v.etd ? format(new Date(v.etd), "dd/MM/yyyy") : "Non défini"}
                   </option>
                 ))}
               </select>
             </div>
 
-            <div className="col-span-12 lg:col-span-5 flex gap-3">
+            {/* Upload/Add buttons */}
+            <div className="col-span-12 lg:col-span-5 flex gap-2.5">
               <button
                 type="button"
                 onClick={handleManualAdd}
-                className="flex-[1] px-6 py-4 rounded-3xl bg-brand-card border-2 border-brand-border text-brand-text-dim font-black text-xs uppercase tracking-widest hover:border-emerald-500 hover:text-emerald-600 hover:shadow-xl hover:shadow-emerald-500/10 transition-all flex items-center justify-center gap-2 active:scale-95"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-brand-surface border border-brand-border text-brand-text font-black text-[10px] uppercase tracking-wider hover:border-primary hover:text-primary transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-sm"
               >
                 <Plus className="w-4 h-4" />
-                Manuel
+                Saisie Manuelle
               </button>
+              
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex-[2] px-6 py-4 rounded-3xl bg-slate-800 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-600 hover:shadow-xl hover:shadow-emerald-500/20 transition-all flex items-center justify-center gap-3 active:scale-95"
+                className="flex-1 px-5 py-2.5 rounded-xl bg-slate-800 text-white font-black text-[10px] uppercase tracking-wider hover:bg-emerald-600 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-emerald-500/5 border border-transparent"
               >
                 <Upload className="w-4 h-4" />
-                Importer Excel
+                Excel (.xlsx)
               </button>
               <input type="file" accept=".xlsx, .xls, .csv" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
             </div>
           </div>
 
           {/* Table Container */}
-          <div className="flex-1 bg-brand-card rounded-[2.5rem] shadow-xl shadow-black/50/50 border border-brand-border overflow-hidden flex flex-col min-h-0">
-            <div className="overflow-auto flex-1 scrollbar-thin scrollbar-thumb-slate-200">
-              <table className="w-full text-left text-xs whitespace-nowrap border-separate border-spacing-0">
-                <thead className="sticky top-0 z-10">
-                  <tr className="bg-brand-bg/80 backdrop-blur-md">
-                    {["#", "Booking", "Statut", "POD", "Shipper", "Correction", "Timbre", "D. Retrait", "Note", ""].map((h, i) => (
-                      <th key={i} className="px-5 py-4 text-brand-text-muted font-black uppercase tracking-widest border-b border-brand-border">{h}</th>
-                    ))}
+          <div className="flex-1 bg-brand-card rounded-3xl border border-brand-border overflow-hidden flex flex-col min-h-0 shadow-xl shadow-black/5">
+            <div className="overflow-auto flex-1 scrollbar-thin">
+              <table className="w-full text-left text-xs whitespace-nowrap border-collapse">
+                <thead className="sticky top-0 z-10 bg-brand-surface/90 backdrop-blur-md border-b border-brand-border">
+                  <tr className="text-brand-text-muted font-black uppercase tracking-widest text-[9px]">
+                    <th className="px-5 py-3">N°</th>
+                    <th className="px-5 py-3">Booking</th>
+                    <th className="px-5 py-3">Statut</th>
+                    <th className="px-5 py-3">POD</th>
+                    <th className="px-5 py-3">Shipper</th>
+                    <th className="px-5 py-3">Correction</th>
+                    <th className="px-5 py-3">Timbre</th>
+                    <th className="px-5 py-3">Date Retrait</th>
+                    <th className="px-5 py-3">Note</th>
+                    <th className="px-5 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-brand-border">
                   {bls.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="py-32 text-center text-slate-300">
-                        <div className="flex flex-col items-center opacity-40">
-                          <AlertCircle className="w-16 h-16 mb-4" />
-                          <p className="text-lg font-black uppercase tracking-tighter">La liste est vide</p>
-                          <p className="text-xs font-bold font-mono">EN ATTENTE DE DONNÉES...</p>
+                      <td colSpan={10} className="py-24 text-center text-brand-text-muted">
+                        <div className="flex flex-col items-center opacity-40 animate-pulse">
+                          <AlertCircle className="w-12 h-12 mb-3 text-brand-text-muted" />
+                          <p className="text-sm font-black uppercase tracking-wider">Aucun BL en attente</p>
+                          <p className="text-[10px] font-bold">Importez un Excel ou ajoutez une ligne manuelle pour commencer.</p>
                         </div>
                       </td>
                     </tr>
                   ) : (
                     bls.map((b, i) => (
-                      <tr key={b.id} className="group hover:bg-brand-bg/50 transition-all">
-                        <td className="px-5 py-3 font-mono font-black text-slate-300">{i + 1}</td>
-                        <td className="px-5 py-3"><input value={b.booking} onChange={e => handleChange(b.id, 'booking', e.target.value)} className="w-32 bg-transparent border-b-2 border-transparent focus:border-emerald-400 focus:outline-none font-black text-brand-text uppercase placeholder:text-slate-200" placeholder="Booking..." /></td>
+                      <tr key={b.id} className="hover:bg-brand-surface/20 transition-colors">
+                        <td className="px-5 py-3 font-mono font-black text-brand-text-muted">{i + 1}</td>
+                        <td className="px-5 py-3">
+                          <input 
+                            value={b.booking} 
+                            onChange={e => handleChange(b.id, 'booking', e.target.value)} 
+                            className="w-32 bg-transparent border-b-2 border-transparent focus:border-primary focus:outline-none font-black text-brand-text uppercase placeholder:text-brand-text-muted/40 font-mono text-sm" 
+                            placeholder="Ex : 4055..." 
+                          />
+                        </td>
                         <td className="px-5 py-3">
                            <StatusBadge status={b.statut} className="scale-75 origin-left" />
                         </td>
-                        <td className="px-5 py-3"><input value={b.pod} onChange={e => handleChange(b.id, 'pod', e.target.value)} className="w-20 bg-transparent border-b-2 border-transparent focus:border-blue-400 focus:outline-none font-bold text-brand-text-dim" placeholder="POD" /></td>
-                        <td className="px-5 py-3"><input value={b.shipper} onChange={e => handleChange(b.id, 'shipper', e.target.value)} className="w-48 bg-transparent border-b-2 border-transparent focus:border-blue-400 focus:outline-none font-semibold text-brand-text-dim truncate" placeholder="Shipper..." /></td>
-
-                        <td className="px-5 py-3"><input value={b.statutCorrection} onChange={e => handleChange(b.id, 'statutCorrection', e.target.value)} className="w-24 bg-transparent border-b-2 border-transparent focus:border-blue-400 focus:outline-none font-bold text-brand-text-muted" placeholder="Statut..." /></td>
-                        <td className="px-5 py-3"><input value={b.numTimbre} onChange={e => handleChange(b.id, 'numTimbre', e.target.value)} className="w-24 bg-transparent border-b-2 border-transparent focus:border-blue-400 focus:outline-none font-bold text-brand-text uppercase" placeholder="Timbre" /></td>
-                        <td className="px-5 py-3"><input type="date" value={b.dateRetrait} onChange={e => handleChange(b.id, 'dateRetrait', e.target.value)} className="w-32 bg-transparent border-b-2 border-transparent focus:border-blue-400 focus:outline-none font-bold text-brand-text" /></td>
-                        <td className="px-5 py-3"><input value={b.commentaire} onChange={e => handleChange(b.id, 'commentaire', e.target.value)} className="w-48 bg-transparent border-b-2 border-transparent focus:border-blue-400 focus:outline-none text-brand-text-muted italic" placeholder="Note..." /></td>
+                        <td className="px-5 py-3">
+                          <input 
+                            value={b.pod} 
+                            onChange={e => handleChange(b.id, 'pod', e.target.value)} 
+                            className="w-20 bg-transparent border-b-2 border-transparent focus:border-primary focus:outline-none font-bold text-brand-text-dim text-xs uppercase" 
+                            placeholder="POD" 
+                          />
+                        </td>
+                        <td className="px-5 py-3">
+                          <input 
+                            value={b.shipper} 
+                            onChange={e => handleChange(b.id, 'shipper', e.target.value)} 
+                            className="w-48 bg-transparent border-b-2 border-transparent focus:border-primary focus:outline-none font-semibold text-brand-text-dim text-xs" 
+                            placeholder="Shipper..." 
+                          />
+                        </td>
+                        <td className="px-5 py-3">
+                          <input 
+                            value={b.statutCorrection} 
+                            onChange={e => handleChange(b.id, 'statutCorrection', e.target.value)} 
+                            className="w-24 bg-transparent border-b-2 border-transparent focus:border-primary focus:outline-none font-bold text-brand-text-muted text-xs" 
+                            placeholder="Statut..." 
+                          />
+                        </td>
+                        <td className="px-5 py-3">
+                          <input 
+                            value={b.numTimbre} 
+                            onChange={e => handleChange(b.id, 'numTimbre', e.target.value)} 
+                            className="w-24 bg-transparent border-b-2 border-transparent focus:border-primary focus:outline-none font-bold text-brand-text uppercase font-mono text-xs" 
+                            placeholder="Timbre" 
+                          />
+                        </td>
+                        <td className="px-5 py-3">
+                          <input 
+                            type="date" 
+                            value={b.dateRetrait} 
+                            onChange={e => handleChange(b.id, 'dateRetrait', e.target.value)} 
+                            className="w-32 bg-transparent border-b-2 border-transparent focus:border-primary focus:outline-none font-bold text-brand-text text-xs" 
+                          />
+                        </td>
+                        <td className="px-5 py-3">
+                          <input 
+                            value={b.commentaire} 
+                            onChange={e => handleChange(b.id, 'commentaire', e.target.value)} 
+                            className="w-48 bg-transparent border-b-2 border-transparent focus:border-primary focus:outline-none text-brand-text-muted italic text-xs" 
+                            placeholder="Remarque..." 
+                          />
+                        </td>
                         <td className="px-5 py-3 text-right">
-                          <button type="button" onClick={() => handleRemoveBl(b.id)} className="text-slate-200 hover:text-red-500 transition-all p-2 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                          <button 
+                            type="button" 
+                            onClick={() => handleRemoveBl(b.id)} 
+                            className="text-brand-text-muted hover:text-red-500 transition-all p-1.5 hover:bg-brand-surface border border-transparent hover:border-brand-border rounded-lg"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </td>
                       </tr>
                     ))
@@ -323,33 +399,31 @@ export default function AddBlModal({ onClose, onSuccess }: AddBlModalProps) {
                 </tbody>
               </table>
             </div>
-            
-            {/* Footer shadow indicator */}
-            <div className="h-6 bg-gradient-to-t from-slate-50/50 to-transparent flex-shrink-0" />
           </div>
         </div>
 
         {/* Action Bar */}
-        <div className="px-10 py-6 border-t border-brand-border bg-brand-card flex justify-end gap-4 sticky bottom-0 z-20">
+        <div className="p-5 md:p-6 border-t border-brand-border bg-brand-surface/30 flex justify-end gap-3 sticky bottom-0 z-20">
           <button 
             type="button" 
             onClick={onClose}
-            className="px-8 py-4 rounded-2xl border-2 border-brand-border font-black text-brand-text-muted hover:bg-brand-bg hover:text-brand-text-dim transition-all text-xs uppercase tracking-widest active:scale-95"
+            className="px-6 py-3 rounded-xl border border-brand-border font-black text-brand-text-muted hover:text-brand-text hover:bg-brand-surface transition-all text-[10px] uppercase tracking-wider active:scale-95"
           >
             Annuler
           </button>
+          
           <button 
             type="submit" 
             onClick={handleSubmit}
             disabled={isSaving || bls.length === 0}
-            className="px-10 py-4 rounded-2xl font-black text-white shadow-2xl shadow-emerald-500/20 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:shadow-none transition-all flex items-center gap-3 text-xs uppercase tracking-widest active:scale-95"
+            className="px-8 py-3 rounded-xl font-black text-white shadow-lg bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:shadow-none transition-all flex items-center gap-2 text-[10px] uppercase tracking-wider active:scale-95"
           >
              {isSaving ? (
-                <div className="w-5 h-5 border-2 border-brand-border border-t-white rounded-full animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
              ) : (
-                <Save className="w-5 h-5" />
+                <Save className="w-4 h-4" />
              )}
-             Enregistrer sur le serveur ({bls.filter(b => b.booking.length > 2).length} valides)
+             Enregistrer ({bls.filter(b => b.booking.length > 2).length} valides)
           </button>
         </div>
 

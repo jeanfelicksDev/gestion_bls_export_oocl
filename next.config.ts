@@ -9,12 +9,9 @@ const withSerwist = withSerwistInit({
 
 const nextConfig: NextConfig = {
       typescript: {
-              ignoreBuildErrors: true,
+              ignoreBuildErrors: false,
       },
-      eslint: {
-              ignoreDuringBuilds: true,
-      },
-      serverExternalPackages: ["@prisma/adapter-better-sqlite3", "better-sqlite3"],
+      serverExternalPackages: ["@prisma/adapter-pg", "pg"],
       turbopack: {},
 };
 

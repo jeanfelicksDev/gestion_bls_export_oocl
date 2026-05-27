@@ -1,61 +1,125 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { validateBLInput, ValidationError } from "@/lib/validation";
+import { successResponse, handleApiError } from "@/lib/apiResponse";
+import { logger } from "@/lib/logger";
+import { IBLInput, IBL } from "@/lib/types";
 
-export async function POST(req: Request) {
+const CONTEXT = "API_BLS";
+
+export async function GET(request: NextRequest) {
   try {
-    const body = await req.json();
-    
-    // Basic validation
-    if (!body.booking || !body.voyageId) {
-      return NextResponse.json({ error: "Booking et VoyageId requis" }, { status: 400 });
-    }
+    const { searchParams } = new URL(request.url);
+    const voyageId = searchParams.get("voyageId");
+    const skip = parseInt(searchParams.get("skip") || "0");
+    const take = parseInt(searchParams.get("take") || "50");
 
-    const bl = await prisma.bL.create({
+    logger.debug(CONTEXT, "GET request", { voyageId, skip, take });
+
+    const where = voyageId ? { voyageId } : undefined;
+
+    const [bls, total] = await Promise.all([
+      prisma.bL.findMany({
+        where,
+        skip,
+        take,
+        include: {
+          autresCharges: true,
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.bL.count({ where }),
+    ]);
+
+    logger.info(CONTEXT, `Retrieved ${bls.length} BLs`);
+
+    return successResponse({
+      data: bls,
+      total,
+      skip,
+      take,
+      hasMore: skip + take < total,
+    });
+  } catch (error) {
+    logger.error(CONTEXT, "GET error", error as Error);
+    return handleApiError(CONTEXT, error, 500);
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body: unknown = await req.json();
+
+    // Validate input
+    validateBLInput(body);
+
+    const blInput = body as IBLInput;
+
+    logger.debug(CONTEXT, "POST creating BL", { booking: blInput.booking });
+
+    const bl: IBL = await prisma.bL.create({
       data: {
-        booking: String(body.booking),
-        voyageId: body.voyageId,
-        statut: body.dateRetrait ? "RETIRE" : "EN ATTENTE RETRAIT",
-        dateRetrait: body.dateRetrait ? new Date(body.dateRetrait) : null,
-        pod: body.pod || null,
-        shipper: body.shipper || null,
-        typeConnaissement: body.typeConnaissement || null,
-        tender: body.tender || null,
-        freighting: body.freighting || null,
-        valeurFret: body.valeurFret || null,
-        montantFret: body.montantFret || null,
-        deviseFret: body.deviseFret || null,
-        statutFret: body.statutFret || null,
-        numTimbre: body.numTimbre || null,
-        statutCorrection: body.statutCorrection || null,
-        commentaire: body.commentaire || null,
-        raisonRetour: body.raisonRetour || null,
-        dateRetour: body.dateRetour ? new Date(body.dateRetour) : null,
-        numFactureRetour: body.numFactureRetour || null,
-        isORG: Boolean(body.isORG),
-        isNNG: Boolean(body.isNNG),
-        isSWB: Boolean(body.isSWB),
-        isScanne: Boolean(body.isScanne),
-        isNoteTraitee: Boolean(body.isNoteTraitee),
-        autresCharges: body.autresCharges ? {
-          create: body.autresCharges.map((c: any) => ({
-            type: c.type,
-            montant: String(c.montant || ""),
-            observation: c.observation || null
-          }))
-        } : undefined
+        booking: String(blInput.booking),
+        voyageId: blInput.voyageId,
+        statut: blInput.dateRetrait ? "RETIRE" : "EN ATTENTE RETRAIT",
+        dateRetrait: blInput.dateRetrait
+          ? new Date(blInput.dateRetrait)
+          : null,
+        pod: blInput.pod || null,
+        shipper: blInput.shipper || null,
+        typeConnaissement: blInput.typeConnaissement || null,
+        tender: blInput.tender || null,
+        freighting: blInput.freighting || null,
+        valeurFret: blInput.valeurFret ? String(blInput.valeurFret) : null,
+        montantFret: blInput.montantFret
+          ? String(blInput.montantFret)
+          : null,
+        deviseFret: blInput.deviseFret || null,
+        statutFret: blInput.statutFret || null,
+        numTimbre: blInput.numTimbre || null,
+        statutCorrection: blInput.statutCorrection || null,
+        commentaire: blInput.commentaire || null,
+        raisonRetour: blInput.raisonRetour || null,
+        dateRetour: blInput.dateRetour
+          ? new Date(blInput.dateRetour)
+          : null,
+        numFactureRetour: blInput.numFactureRetour || null,
+        isORG: Boolean(blInput.isORG),
+        isNNG: Boolean(blInput.isNNG),
+        isSWB: Boolean(blInput.isSWB),
+        isScanne: Boolean(blInput.isScanne),
+        isNoteTraitee: Boolean(blInput.isNoteTraitee),
+        autresCharges: blInput.autresCharges
+          ? {
+              create: blInput.autresCharges.map((c) => ({
+                type: c.type,
+                montant: String(c.montant || ""),
+                observation: c.observation || null,
+              })),
+            }
+          : undefined,
       },
       include: {
-        autresCharges: true
-      }
+        autresCharges: true,
+      },
     });
 
-    return NextResponse.json(bl);
-  } catch (error: any) {
-    console.error("API Error (BL Creation):", error);
-    // Handle unique constraint on booking if necessary
-    if (error.code === 'P2002') {
-      return NextResponse.json({ error: "Ce numéro de booking existe déjà" }, { status: 400 });
+    logger.info(CONTEXT, `BL created successfully`, {
+      blId: bl.id,
+      booking: bl.booking,
+    });
+
+    return successResponse(bl, "BL créé avec succès");
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      logger.warn(CONTEXT, "Validation error", error as Error);
+      return NextResponse.json(
+        { error: error.message, code: error.code },
+        { status: error.status }
+      );
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+
+    logger.error(CONTEXT, "POST error", error as Error);
+    return handleApiError(CONTEXT, error, 500);
   }
 }

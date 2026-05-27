@@ -35,22 +35,38 @@ export default function BLUploadModal({ voyageId, voyageLabel, onClose, onSucces
     reader.onload = async (evt) => {
       try {
         const bstr = evt.target?.result;
+        if (!bstr || typeof bstr !== "string") {
+          throw new Error("Impossible de lire le contenu du fichier");
+        }
+
         const wb = XLSX.read(bstr, { type: "binary", cellDates: true });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const data = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
+
+        type ExcelRow = [
+          (string | number | undefined | null)?, // booking
+          (string | undefined | null)?,          // pod
+          (string | undefined | null)?,          // shipper
+          (string | undefined | null)?,          // statut
+          (string | undefined | null)?,          // typeConnaissement
+          (string | number | undefined | null)?, // tender
+          (string | number | undefined | null)?, // freighting
+          (string | number | undefined | null)?  // valeurFret
+        ];
+
+        const data = XLSX.utils.sheet_to_json(ws, { header: 1 }) as ExcelRow[];
 
         const blsRows = data.slice(2);
         const bls = blsRows
-          .filter(row => row[0] && String(row[0]).trim() !== "" && String(row[0]).toLowerCase().trim() !== "booking")
+          .filter(row => row && row[0] && String(row[0]).trim() !== "" && String(row[0]).toLowerCase().trim() !== "booking")
           .map(row => ({
-            booking: row[0],
-            pod: row[1],
-            shipper: row[2],
-            statut: row[3],
-            typeConnaissement: row[4],
-            tender: row[5],
-            freighting: row[6],
-            valeurFret: row[7],
+            booking: String(row[0] || "").trim(),
+            pod: row[1] ? String(row[1]).trim() : null,
+            shipper: row[2] ? String(row[2]).trim() : null,
+            statut: row[3] ? String(row[3]).trim() : null,
+            typeConnaissement: row[4] ? String(row[4]).trim() : null,
+            tender: row[5] ? String(row[5]).trim() : "",
+            freighting: row[6] ? String(row[6]).trim() : "",
+            valeurFret: row[7] ? String(row[7]).trim() : "",
           }));
 
         if (bls.length === 0) {
@@ -70,13 +86,13 @@ export default function BLUploadModal({ voyageId, voyageLabel, onClose, onSucces
           setStatus("success");
           onSuccess();
         } else {
-          const err = await res.json();
+          const err = await res.json() as { error?: string };
           setStatus("error");
           setMessage(err.error || "Erreur lors du chargement");
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         setStatus("error");
-        setMessage("Erreur de lecture : " + err.message);
+        setMessage("Erreur de lecture : " + (err instanceof Error ? err.message : String(err)));
       }
     };
     reader.readAsBinaryString(file);
